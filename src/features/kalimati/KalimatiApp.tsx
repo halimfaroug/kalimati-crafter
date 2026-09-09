@@ -19,7 +19,12 @@ import {
   playClip,
   putClip,
   sayWord,
+  speakAr,
+  speakEn,
 } from "./audio";
+import { assess, recognitionSupported, listen, scoreColour, type Score } from "./pronunciation";
+
+const SCORE_STORE = "kalimati.scores.v1";
 
 const PRAISE = [
   "Yes! You got it!",
@@ -205,9 +210,13 @@ export default function KalimatiApp() {
   const [recording, setRecording] = useState<string | null>(null);
   const [recDeckId, setRecDeckId] = useState<string>(DECKS[0]!.id);
   const [micError, setMicError] = useState("");
+  const [scores, setScores] = useState<Record<string, Score>>({});
+  const [checking, setChecking] = useState<string | null>(null);
 
   const recorder = useRef<MediaRecorder | null>(null);
   const recTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stopListen = useRef<(() => Promise<string>) | null>(null);
+  const recStart = useRef(0);
   const loaded = useRef(false);
 
   /* load + persist */
@@ -366,7 +375,7 @@ export default function KalimatiApp() {
     }
   }, []);
 
-  const startRec = async (key: string) => {
+  const startRec = async (key: string, word: Word, lang: "en" | "ar") => {
     if (recording) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -379,6 +388,7 @@ export default function KalimatiApp() {
       };
       rec.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
+        const durationMs = Date.now() - recStart.current;
         const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
         if (blob.size > 0) {
           await putClip(key, blob);
@@ -386,8 +396,39 @@ export default function KalimatiApp() {
         }
         setRecording(null);
         setMicError("");
+        setChecking(key);
+        let heardRaw = "";
+        try {
+          heardRaw = stopListen.current ? await stopListen.current() : "";
+        } catch {
+          heardRaw = "";
+        }
+        stopListen.current = null;
+        const score = assess({
+          expectedRaw: lang === "ar" ? word.a : word.e,
+          heardRaw,
+          lang,
+          durationMs,
+          recognised: recognitionSupported(),
+        });
+        setScores((prev) => {
+          const next = { ...prev, [key]: score };
+          try {
+            localStorage.setItem(SCORE_STORE, JSON.stringify(next));
+          } catch {
+            /* ignore */
+          }
+          return next;
+        });
+        setChecking(null);
       };
       recorder.current = rec;
+      recStart.current = Date.now();
+      try {
+        stopListen.current = listen(lang);
+      } catch {
+        stopListen.current = null;
+      }
       rec.start();
       setRecording(key);
       setMicError("");
@@ -400,6 +441,16 @@ export default function KalimatiApp() {
   const removeClip = async (key: string) => {
     try {
       await delClip(key);
+      setScores((prev) => {
+        const n = { ...prev };
+        delete n[key];
+        try {
+          localStorage.setItem(SCORE_STORE, JSON.stringify(n));
+        } catch {
+          /* ignore */
+        }
+        return n;
+      });
       setRecKeys((r) => {
         const n = { ...r };
         delete n[key];
@@ -877,7 +928,7 @@ export default function KalimatiApp() {
                             <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.06em" }}>{sl.tag}</span>
                             <button
                               aria-label={live ? `Stop recording ${w.e}` : `Record ${w.e} in ${sl.tag}`}
-                              onClick={() => (live ? stopRec() : startRec(key))}
+                              onClick={() => (live ? stopRec() : startRec(key, w, sl.lang))}
                               style={{
                                 width: 46,
                                 height: 46,
