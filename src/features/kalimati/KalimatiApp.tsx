@@ -973,6 +973,30 @@ export default function KalimatiApp() {
                         );
                       })}
                     </div>
+                    <div style={{ flex: "1 1 100%", display: "flex", flexDirection: "column", gap: 10 }}>
+                      {slots.map((sl) => {
+                        const key = clipKey(w, sl.lang);
+                        if (checking === key)
+                          return (
+                            <div key={sl.tag + "-check"} style={{ ...card("#FFF6EC", 18), padding: "12px 16px", boxShadow: `0 3px 0 ${INK}`, fontSize: 15, fontWeight: 700 }}>
+                              Listening back to your {sl.lang === "ar" ? "Arabic" : "English"}…
+                            </div>
+                          );
+                        const sc = scores[key];
+                        if (!sc) return null;
+                        return (
+                          <ScorePanel
+                            key={sl.tag + "-score"}
+                            score={sc}
+                            word={w}
+                            lang={sl.lang}
+                            onPlayMine={() => void playClip(key)}
+                            onPlayModel={() => (sl.lang === "ar" ? speakAr(w.a) : speakEn(w.e))}
+                            onRetry={() => void startRec(key, w, sl.lang)}
+                          />
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               })}
@@ -1276,6 +1300,121 @@ function PracticeScreen({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+
+/* ---------- pronunciation score panel ---------- */
+
+function ScorePanel({
+  score,
+  word,
+  lang,
+  onPlayMine,
+  onPlayModel,
+  onRetry,
+}: {
+  score: Score;
+  word: Word;
+  lang: "en" | "ar";
+  onPlayMine: () => void;
+  onPlayModel: () => void;
+  onRetry: () => void;
+}) {
+  const fill = scoreColour(score.percent);
+  const btn: CSSProperties = {
+    border: `3px solid ${INK}`,
+    borderRadius: 999,
+    background: "#FFFFFF",
+    color: INK,
+    padding: "10px 16px",
+    fontSize: 14,
+    fontWeight: 800,
+    cursor: "pointer",
+    minHeight: 44,
+    fontFamily: "inherit",
+  };
+  return (
+    <div style={{ ...card(fill, 20), padding: "16px 18px", boxShadow: `0 4px 0 ${INK}`, display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+        <div
+          aria-hidden
+          style={{
+            width: 68,
+            height: 68,
+            flex: "0 0 auto",
+            borderRadius: "50%",
+            border: `4px solid ${INK}`,
+            background: "#FFFFFF",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontFamily: "Lora, serif",
+            fontSize: 22,
+            fontWeight: 700,
+          }}
+        >
+          {score.percent}%
+        </div>
+        <div style={{ flex: "1 1 180px", minWidth: 0 }}>
+          <div style={{ fontFamily: "Lora, serif", fontSize: 20, fontWeight: 700 }}>
+            {score.grade} <span aria-hidden>{"★".repeat(score.stars) + "☆".repeat(3 - score.stars)}</span>
+          </div>
+          <div style={{ fontSize: 14, color: "#6E6055", fontWeight: 700 }}>
+            {lang === "ar" ? "Arabic" : "English"} · {score.recognised ? `heard "${score.heard}"` : "sound check only"}
+          </div>
+          <div
+            role="img"
+            aria-label={`Pronunciation accuracy ${score.percent} percent, ${score.grade}`}
+            style={{ marginTop: 8, height: 14, borderRadius: 999, border: `3px solid ${INK}`, background: "#FFFFFF", overflow: "hidden" }}
+          >
+            <div style={{ width: `${score.percent}%`, height: "100%", background: INK, transition: "width 0.5s ease-out" }} />
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} dir={lang === "ar" ? "rtl" : "ltr"}>
+        {score.parts.map((part, i) => (
+          <span
+            key={i + part.text}
+            style={{
+              border: `3px solid ${INK}`,
+              borderRadius: 12,
+              padding: "4px 10px",
+              background: part.ok ? "#FFFFFF" : "#FFD9C9",
+              fontFamily: lang === "ar" ? "'Noto Naskh Arabic', serif" : "Lora, serif",
+              fontSize: lang === "ar" ? 20 : 16,
+              fontWeight: 700,
+              opacity: part.ok ? 1 : 0.9,
+            }}
+          >
+            {part.text}
+            <span aria-hidden style={{ fontSize: 12, marginLeft: 6 }}>{part.ok ? "✓" : "•"}</span>
+          </span>
+        ))}
+      </div>
+
+      <ul style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 4 }}>
+        {score.tips.map((tip) => (
+          <li key={tip} style={{ fontSize: 15, lineHeight: 1.5, color: "#4C4038" }}>
+            {tip}
+          </li>
+        ))}
+      </ul>
+
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <button onClick={onPlayMine} style={btn}>
+          ▶ My recording
+        </button>
+        <button onClick={onPlayModel} style={{ ...btn, background: "#E6EEFB" }}>
+          ▶ Model voice{lang === "ar" ? " (Arabic)" : ""}
+        </button>
+        <button onClick={onRetry} style={{ ...btn, background: INK, color: "#FFF6EC" }}>
+          ↻ Try again
+        </button>
+      </div>
+      <span style={{ display: "none" }}>{word.e}</span>
     </div>
   );
 }
