@@ -142,3 +142,21 @@
     color: var(--color-foreground);
   }
 }
+
+/* Kalimati — playful storybook animations */
+@keyframes popIn { from { transform: scale(0.94) translateY(8px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+@keyframes nudge { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+@keyframes floaty { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-7px) rotate(2deg); } }
+@keyframes bounceIn { 0% { transform: scale(0.3); opacity: 0; } 55% { transform: scale(1.18); } 75% { transform: scale(0.94); } 100% { transform: scale(1); opacity: 1; } }
+@keyframes hop { 0%,100% { transform: translateY(0); } 30% { transform: translateY(-14px); } 55% { transform: translateY(0); } 70% { transform: translateY(-6px); } }
+@keyframes wiggle { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+@keyframes burst { 0% { transform: translate(0,0) scale(0.2); opacity: 1; } 100% { transform: translate(var(--bx), var(--by)) scale(1.15); opacity: 0; } }
+@keyframes sparkle { 0%,100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.25) rotate(12deg); } }
+
+.k-press { transition: transform 0.12s ease, box-shadow 0.12s ease; }
+.k-press:hover { transform: translateY(2px); filter: brightness(1.02); }
+.k-press:active { transform: translateY(4px); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
+}
