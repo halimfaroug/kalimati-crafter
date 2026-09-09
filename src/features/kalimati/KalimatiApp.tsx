@@ -236,6 +236,12 @@ export default function KalimatiApp() {
     } catch {
       /* ignore */
     }
+    try {
+      const rawScores = JSON.parse(localStorage.getItem(SCORE_STORE) || "null") as Record<string, Score> | null;
+      if (rawScores) setScores(rawScores);
+    } catch {
+      /* ignore */
+    }
     loaded.current = true;
     allClipKeys()
       .then((keys) => {
