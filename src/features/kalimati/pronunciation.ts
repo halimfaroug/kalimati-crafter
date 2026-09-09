@@ -194,6 +194,7 @@ export function listen(lang: "en" | "ar"): () => Promise<string> {
   if (!recognitionSupported()) return async () => "";
   const w = window as unknown as Record<string, new () => RecognitionLike>;
   const Ctor = w["SpeechRecognition"] || w["webkitSpeechRecognition"];
+  if (!Ctor) return async () => "";
   let transcript = "";
   let settled: ((t: string) => void) | null = null;
   let ended = false;
