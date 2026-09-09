@@ -19,7 +19,12 @@ import {
   playClip,
   putClip,
   sayWord,
+  speakAr,
+  speakEn,
 } from "./audio";
+import { assess, recognitionSupported, listen, scoreColour, type Score } from "./pronunciation";
+
+const SCORE_STORE = "kalimati.scores.v1";
 
 const PRAISE = [
   "Yes! You got it!",
@@ -205,9 +210,13 @@ export default function KalimatiApp() {
   const [recording, setRecording] = useState<string | null>(null);
   const [recDeckId, setRecDeckId] = useState<string>(DECKS[0]!.id);
   const [micError, setMicError] = useState("");
+  const [scores, setScores] = useState<Record<string, Score>>({});
+  const [checking, setChecking] = useState<string | null>(null);
 
   const recorder = useRef<MediaRecorder | null>(null);
   const recTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stopListen = useRef<(() => Promise<string>) | null>(null);
+  const recStart = useRef(0);
   const loaded = useRef(false);
 
   /* load + persist */
@@ -224,6 +233,12 @@ export default function KalimatiApp() {
         }
         setProgress(next);
       }
+    } catch {
+      /* ignore */
+    }
+    try {
+      const rawScores = JSON.parse(localStorage.getItem(SCORE_STORE) || "null") as Record<string, Score> | null;
+      if (rawScores) setScores(rawScores);
     } catch {
       /* ignore */
     }
@@ -366,7 +381,7 @@ export default function KalimatiApp() {
     }
   }, []);
 
-  const startRec = async (key: string) => {
+  const startRec = async (key: string, word: Word, lang: "en" | "ar") => {
     if (recording) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -379,6 +394,7 @@ export default function KalimatiApp() {
       };
       rec.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
+        const durationMs = Date.now() - recStart.current;
         const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
         if (blob.size > 0) {
           await putClip(key, blob);
@@ -386,8 +402,39 @@ export default function KalimatiApp() {
         }
         setRecording(null);
         setMicError("");
+        setChecking(key);
+        let heardRaw = "";
+        try {
+          heardRaw = stopListen.current ? await stopListen.current() : "";
+        } catch {
+          heardRaw = "";
+        }
+        stopListen.current = null;
+        const score = assess({
+          expectedRaw: lang === "ar" ? word.a : word.e,
+          heardRaw,
+          lang,
+          durationMs,
+          recognised: recognitionSupported(),
+        });
+        setScores((prev) => {
+          const next = { ...prev, [key]: score };
+          try {
+            localStorage.setItem(SCORE_STORE, JSON.stringify(next));
+          } catch {
+            /* ignore */
+          }
+          return next;
+        });
+        setChecking(null);
       };
       recorder.current = rec;
+      recStart.current = Date.now();
+      try {
+        stopListen.current = listen(lang);
+      } catch {
+        stopListen.current = null;
+      }
       rec.start();
       setRecording(key);
       setMicError("");
@@ -400,6 +447,16 @@ export default function KalimatiApp() {
   const removeClip = async (key: string) => {
     try {
       await delClip(key);
+      setScores((prev) => {
+        const n = { ...prev };
+        delete n[key];
+        try {
+          localStorage.setItem(SCORE_STORE, JSON.stringify(n));
+        } catch {
+          /* ignore */
+        }
+        return n;
+      });
       setRecKeys((r) => {
         const n = { ...r };
         delete n[key];
@@ -877,7 +934,7 @@ export default function KalimatiApp() {
                             <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.06em" }}>{sl.tag}</span>
                             <button
                               aria-label={live ? `Stop recording ${w.e}` : `Record ${w.e} in ${sl.tag}`}
-                              onClick={() => (live ? stopRec() : startRec(key))}
+                              onClick={() => (live ? stopRec() : startRec(key, w, sl.lang))}
                               style={{
                                 width: 46,
                                 height: 46,
@@ -913,6 +970,30 @@ export default function KalimatiApp() {
                               </>
                             )}
                           </div>
+                        );
+                      })}
+                    </div>
+                    <div style={{ flex: "1 1 100%", display: "flex", flexDirection: "column", gap: 10 }}>
+                      {slots.map((sl) => {
+                        const key = clipKey(w, sl.lang);
+                        if (checking === key)
+                          return (
+                            <div key={sl.tag + "-check"} style={{ ...card("#FFF6EC", 18), padding: "12px 16px", boxShadow: `0 3px 0 ${INK}`, fontSize: 15, fontWeight: 700 }}>
+                              Listening back to your {sl.lang === "ar" ? "Arabic" : "English"}…
+                            </div>
+                          );
+                        const sc = scores[key];
+                        if (!sc) return null;
+                        return (
+                          <ScorePanel
+                            key={sl.tag + "-score"}
+                            score={sc}
+                            word={w}
+                            lang={sl.lang}
+                            onPlayMine={() => void playClip(key)}
+                            onPlayModel={() => (sl.lang === "ar" ? speakAr(w.a) : speakEn(w.e))}
+                            onRetry={() => void startRec(key, w, sl.lang)}
+                          />
                         );
                       })}
                     </div>
@@ -1219,6 +1300,121 @@ function PracticeScreen({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+
+/* ---------- pronunciation score panel ---------- */
+
+function ScorePanel({
+  score,
+  word,
+  lang,
+  onPlayMine,
+  onPlayModel,
+  onRetry,
+}: {
+  score: Score;
+  word: Word;
+  lang: "en" | "ar";
+  onPlayMine: () => void;
+  onPlayModel: () => void;
+  onRetry: () => void;
+}) {
+  const fill = scoreColour(score.percent);
+  const btn: CSSProperties = {
+    border: `3px solid ${INK}`,
+    borderRadius: 999,
+    background: "#FFFFFF",
+    color: INK,
+    padding: "10px 16px",
+    fontSize: 14,
+    fontWeight: 800,
+    cursor: "pointer",
+    minHeight: 44,
+    fontFamily: "inherit",
+  };
+  return (
+    <div style={{ ...card(fill, 20), padding: "16px 18px", boxShadow: `0 4px 0 ${INK}`, display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+        <div
+          aria-hidden
+          style={{
+            width: 68,
+            height: 68,
+            flex: "0 0 auto",
+            borderRadius: "50%",
+            border: `4px solid ${INK}`,
+            background: "#FFFFFF",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontFamily: "Lora, serif",
+            fontSize: 22,
+            fontWeight: 700,
+          }}
+        >
+          {score.percent}%
+        </div>
+        <div style={{ flex: "1 1 180px", minWidth: 0 }}>
+          <div style={{ fontFamily: "Lora, serif", fontSize: 20, fontWeight: 700 }}>
+            {score.grade} <span aria-hidden>{"★".repeat(score.stars) + "☆".repeat(3 - score.stars)}</span>
+          </div>
+          <div style={{ fontSize: 14, color: "#6E6055", fontWeight: 700 }}>
+            {lang === "ar" ? "Arabic" : "English"} · {score.recognised ? `heard "${score.heard}"` : "sound check only"}
+          </div>
+          <div
+            role="img"
+            aria-label={`Pronunciation accuracy ${score.percent} percent, ${score.grade}`}
+            style={{ marginTop: 8, height: 14, borderRadius: 999, border: `3px solid ${INK}`, background: "#FFFFFF", overflow: "hidden" }}
+          >
+            <div style={{ width: `${score.percent}%`, height: "100%", background: INK, transition: "width 0.5s ease-out" }} />
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} dir={lang === "ar" ? "rtl" : "ltr"}>
+        {score.parts.map((part, i) => (
+          <span
+            key={i + part.text}
+            style={{
+              border: `3px solid ${INK}`,
+              borderRadius: 12,
+              padding: "4px 10px",
+              background: part.ok ? "#FFFFFF" : "#FFD9C9",
+              fontFamily: lang === "ar" ? "'Noto Naskh Arabic', serif" : "Lora, serif",
+              fontSize: lang === "ar" ? 20 : 16,
+              fontWeight: 700,
+              opacity: part.ok ? 1 : 0.9,
+            }}
+          >
+            {part.text}
+            <span aria-hidden style={{ fontSize: 12, marginLeft: 6 }}>{part.ok ? "✓" : "•"}</span>
+          </span>
+        ))}
+      </div>
+
+      <ul style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 4 }}>
+        {score.tips.map((tip) => (
+          <li key={tip} style={{ fontSize: 15, lineHeight: 1.5, color: "#4C4038" }}>
+            {tip}
+          </li>
+        ))}
+      </ul>
+
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <button onClick={onPlayMine} style={btn}>
+          ▶ My recording
+        </button>
+        <button onClick={onPlayModel} style={{ ...btn, background: "#E6EEFB" }}>
+          ▶ Model voice{lang === "ar" ? " (Arabic)" : ""}
+        </button>
+        <button onClick={onRetry} style={{ ...btn, background: INK, color: "#FFF6EC" }}>
+          ↻ Try again
+        </button>
+      </div>
+      <span style={{ display: "none" }}>{word.e}</span>
     </div>
   );
 }
