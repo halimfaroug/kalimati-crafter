@@ -28,7 +28,7 @@ function pickVoice(lang: string): SpeechSynthesisVoice | null {
       return sc;
     };
 
-    return want.slice().sort((a, b) => score(b) - score(a))[0];
+    return want.slice().sort((a, b) => score(b) - score(a))[0] ?? null;
   } catch {
     return null;
   }

@@ -72,7 +72,7 @@ function shuffle<T>(a: T[]): T[] {
   const r = a.slice();
   for (let i = r.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [r[i], r[j]] = [r[j], r[i]];
+    [r[i], r[j]] = [r[j]!, r[i]!];
   }
   return r;
 }
@@ -203,7 +203,7 @@ export default function KalimatiApp() {
   const [progress, setProgress] = useState<Progress>(emptyProgress);
   const [recKeys, setRecKeys] = useState<Flags>({});
   const [recording, setRecording] = useState<string | null>(null);
-  const [recDeckId, setRecDeckId] = useState<string>(DECKS[0].id);
+  const [recDeckId, setRecDeckId] = useState<string>(DECKS[0]!.id);
   const [micError, setMicError] = useState("");
 
   const recorder = useRef<MediaRecorder | null>(null);
@@ -265,7 +265,7 @@ export default function KalimatiApp() {
       pool = favWords;
       distractorPool = ALL;
     } else {
-      const deck = DECKS.find((d) => d.id === id) || DECKS[0];
+      const deck = DECKS.find((d) => d.id === id) || DECKS[0]!;
       pool = deck.words;
       distractorPool = deck.words;
     }
@@ -322,7 +322,7 @@ export default function KalimatiApp() {
     fanfare();
     setProgress((p) => {
       const week = p.week.slice();
-      week[dayIndex()] += done;
+      week[dayIndex()] = (week[dayIndex()] || 0) + done;
       let streak = p.streak;
       if (p.lastDay !== day) {
         const y = new Date();
@@ -503,7 +503,7 @@ export default function KalimatiApp() {
               <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", gap: 10 }}>
                 <button
                   className="k-press"
-                  onClick={() => start(DECKS[0].id)}
+                  onClick={() => start(DECKS[0]!.id)}
                   style={{ ...pill("#EE7A56", "#FFFFFF"), padding: "18px 34px", fontSize: 19, boxShadow: `0 6px 0 ${INK}`, minHeight: 48 }}
                 >
                   Start practice
@@ -654,7 +654,7 @@ export default function KalimatiApp() {
                         border: `3px solid ${INK}`,
                         borderRadius: "12px 12px 6px 6px",
                         background: progress.week[i] ? DAY_FILLS[i] : "#F6ECDD",
-                        height: Math.max(8, Math.round((progress.week[i] / maxWeek) * 92)),
+                        height: Math.max(8, Math.round(((progress.week[i] || 0) / maxWeek) * 92)),
                       }}
                     />
                     <div style={{ fontSize: 13, fontWeight: 800, color: i === dayIndex() ? INK : "#B6A695" }}>{label}</div>
@@ -842,7 +842,7 @@ export default function KalimatiApp() {
             </div>
 
             <section style={{ ...card("#FFFFFF"), padding: "20px 24px", display: "flex", flexDirection: "column" }}>
-              {(DECKS.find((d) => d.id === recDeckId) || DECKS[0]).words.map((w) => {
+              {(DECKS.find((d) => d.id === recDeckId) || DECKS[0]!).words.map((w) => {
                 const pic = picFor(w);
                 const slots: Array<{ tag: string; lang: "en" | "ar" }> = [{ tag: "EN", lang: "en" }];
                 if (w.a) slots.push({ tag: "AR", lang: "ar" });
@@ -1005,7 +1005,7 @@ export default function KalimatiApp() {
             <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
               <button
                 className="k-press"
-                onClick={() => start(deckId || DECKS[0].id)}
+                onClick={() => start(deckId || DECKS[0]!.id)}
                 style={{ ...pill("#EE7A56", "#FFFFFF"), flex: "1 1 200px", padding: "17px 28px", fontSize: 18, boxShadow: `0 6px 0 ${INK}`, minHeight: 48 }}
               >
                 Practice again

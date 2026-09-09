@@ -59,9 +59,12 @@ export const PRAISE = ['Yes! You got it!', 'Brilliant!', 'Perfect — well done!
 export const KIND = ['Nearly! Here it is.', 'Good try — look again.', 'Almost! This is the one.', 'Not quite — now you know it.', 'Close one! Here it is.'];
 
 export function picFor(word: Word): Pic {
-  if (SWATCH[word.e]) return { kind: 'swatch', value: SWATCH[word.e] };
-  if (NUMS[word.e]) return { kind: 'num', value: NUMS[word.e] };
-  if (PICS[word.e]) return { kind: 'emoji', value: PICS[word.e] };
+  const swatch = SWATCH[word.e];
+  if (swatch) return { kind: 'swatch', value: swatch };
+  const num = NUMS[word.e];
+  if (num) return { kind: 'num', value: num };
+  const pic = PICS[word.e];
+  if (pic) return { kind: 'emoji', value: pic };
   return { kind: 'letter', value: word.e.charAt(0).toUpperCase() };
 }
 
