@@ -46,8 +46,19 @@ const KIND = [
 const SESSION_LENGTH = 6;
 const INK = "#3B322B";
 
-type Question = { word: Word; mode: "arabic" | "meaning"; options: Word[] };
+type QMode = "arabic" | "meaning" | "reverse" | "listen" | "spell";
+type Question = { word: Word; mode: QMode; options: Word[] };
+type GameMode = "mix" | "arabic" | "meaning" | "reverse" | "listen" | "spell";
 type Flags = Record<string, boolean>;
+
+const GAME_MODES: { id: GameMode; label: string; icon: string; blurb: string }[] = [
+  { id: "mix", label: "Mixed play", icon: "🎲", blurb: "a little of everything" },
+  { id: "arabic", label: "Say it in Arabic", icon: "🔤", blurb: "English word → Arabic" },
+  { id: "reverse", label: "Read the Arabic", icon: "🔁", blurb: "Arabic → English" },
+  { id: "meaning", label: "What does it mean?", icon: "💭", blurb: "pick the meaning" },
+  { id: "listen", label: "Listen and find", icon: "👂", blurb: "hear it, then choose" },
+  { id: "spell", label: "Spell it out", icon: "🧩", blurb: "build the word from letters" },
+];
 
 type Progress = {
   known: Flags;
