@@ -50,10 +50,24 @@ export const PICS: Record<string, string> = {
   reflect: '🪞', flashlight: '🔦', Moon: '🌙', star: '⭐', 'night time': '🌃', sundial: '⏱️',
   electricity: '⚡', 'mains electricity': '🏢', plug: '🔌', wire: '🧵', circuit: '🔁', cell: '🔋',
   switch: '🎚️', lamp: '💡', conductor: '🥄', connect: '🔗', safe: '✅', dangerous: '⚠️',
-  'power station': '🏭', 'electric shock': '😵'
+  'power station': '🏭', 'electric shock': '😵',
+  mother: '👩', father: '👨', brother: '👦', sister: '👧', grandmother: '👵', grandfather: '👴',
+  uncle: '🧔', aunt: '👩‍🦰', cousin: '🧒', friend: '🤝', neighbour: '🏘️',
+  happy: '😀', sad: '😢', angry: '😠', tired: '🥱', hungry: '🍽️', thirsty: '🥤',
+  scared: '😨', excited: '🤩', shy: '🙈', proud: '😌', calm: '😊', surprised: '😲',
+  'orange fruit': '🍊', lemon: '🍋', strawberry: '🍓', watermelon: '🍉', date: '🌴', fig: '🫐',
+  potato: '🥔', cucumber: '🥒', pepper: '🌶️', lettuce: '🥬', garlic: '🧄', peas: '🫛',
+  football: '⚽', ball: '🏀', swimming: '🏊', running: '🏃', cycling: '🚴', team: '👥',
+  game: '🎮', win: '🏆', lose: '😔', race: '🏁', jumping: '🤾', kite: '🪁',
+  weather: '🌦️', hot: '🥵', cold: '🥶', warm: '🌤️', storm: '⛈️', fog: '🌫️',
+  spring: '🌷', summer: '🌞', autumn: '🍂', winter: '⛄', umbrella: '☂️', thunder: '🌩️',
+  circle: '⚪', square: '🟦', triangle: '🔺', rectangle: '🟨', 'star shape': '⭐',
+  big: '🐘', small: '🐜', long: '🦒', 'short': '🐕', open: '🔓', closed: '🔒', heavy: '🪨',
+  hello: '👋', goodbye: '🙋', please: '🙏', 'thank you': '💐', sorry: '😞', yes: '👍', no: '👎',
+  'good morning': '🌅', 'good night': '🌙', welcome: '🫖', 'my name is': '🏷️', 'how are you': '❓'
 };
 
-export const DECK_ICONS: Record<string, string> = { colours: '🎨', numbers: '🔢', daysmonths: '📅', timesofday: '🌤️', body: '🖐️', clothes: '👕', home: '🏠', school: '✏️', food: '🍎', city: '🚌', jobs: '👩‍⚕️', animals: '🐘', actions: '🏃', nature: '🌳', environment: '🌍', forces: '💪', materials: '🪵', growing: '🌱', light: '💡', electricity: '⚡' };
+export const DECK_ICONS: Record<string, string> = { colours: '🎨', numbers: '🔢', daysmonths: '📅', timesofday: '🌤️', body: '🖐️', clothes: '👕', home: '🏠', school: '✏️', food: '🍎', city: '🚌', jobs: '👩‍⚕️', animals: '🐘', actions: '🏃', nature: '🌳', environment: '🌍', forces: '💪', materials: '🪵', growing: '🌱', light: '💡', electricity: '⚡', family: '👨‍👩‍👧', feelings: '😊', fruitveg: '🍓', sports: '⚽', weather: '🌦️', shapes: '🔷', greetings: '👋' };
 
 export const PRAISE = ['Yes! You got it!', 'Brilliant!', 'Perfect — well done!', 'Ooh, nice one!', 'That is exactly right!', 'Clever you!', 'Spot on!'];
 export const KIND = ['Nearly! Here it is.', 'Good try — look again.', 'Almost! This is the one.', 'Not quite — now you know it.', 'Close one! Here it is.'];
