@@ -46,8 +46,19 @@ const KIND = [
 const SESSION_LENGTH = 6;
 const INK = "#3B322B";
 
-type Question = { word: Word; mode: "arabic" | "meaning"; options: Word[] };
+type QMode = "arabic" | "meaning" | "reverse" | "listen" | "spell";
+type Question = { word: Word; mode: QMode; options: Word[] };
+type GameMode = "mix" | "arabic" | "meaning" | "reverse" | "listen" | "spell";
 type Flags = Record<string, boolean>;
+
+const GAME_MODES: { id: GameMode; label: string; icon: string; blurb: string }[] = [
+  { id: "mix", label: "Mixed play", icon: "🎲", blurb: "a little of everything" },
+  { id: "arabic", label: "Say it in Arabic", icon: "🔤", blurb: "English word → Arabic" },
+  { id: "reverse", label: "Read the Arabic", icon: "🔁", blurb: "Arabic → English" },
+  { id: "meaning", label: "What does it mean?", icon: "💭", blurb: "pick the meaning" },
+  { id: "listen", label: "Listen and find", icon: "👂", blurb: "hear it, then choose" },
+  { id: "spell", label: "Spell it out", icon: "🧩", blurb: "build the word from letters" },
+];
 
 type Progress = {
   known: Flags;
@@ -204,6 +215,7 @@ export default function KalimatiApp() {
   const [missed, setMissed] = useState<Word[]>([]);
   const [earned, setEarned] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [gameMode, setGameMode] = useState<GameMode>("mix");
 
   const [progress, setProgress] = useState<Progress>(emptyProgress);
   const [recKeys, setRecKeys] = useState<Flags>({});
@@ -272,7 +284,7 @@ export default function KalimatiApp() {
   const say = useCallback((w: Word, both: boolean) => void sayWord(w, both, recKeys), [recKeys]);
 
   /* session building */
-  const start = (id: string) => {
+  const start = (id: string, requested: GameMode = gameMode) => {
     const len = SESSION_LENGTH;
     let pool: Word[];
     let distractorPool: Word[];
@@ -284,14 +296,23 @@ export default function KalimatiApp() {
       pool = deck.words;
       distractorPool = deck.words;
     }
+    if (requested === "arabic" || requested === "reverse" || requested === "listen") {
+      const withArabic = pool.filter((w) => w.a);
+      if (withArabic.length >= 4) pool = withArabic;
+    }
     if (!pool.length) return;
+    const MIX: QMode[] = ["arabic", "reverse", "meaning", "listen", "spell"];
     const qs: Question[] = shuffle(pool)
       .slice(0, len)
-      .map((w) => {
-        const mode: Question["mode"] = w.a ? "arabic" : "meaning";
+      .map((w, i) => {
+        let mode: QMode = requested === "mix" ? MIX[i % MIX.length]! : (requested as QMode);
+        if (!w.a && (mode === "arabic" || mode === "reverse")) mode = "meaning";
+        if (!w.a && mode === "listen") mode = "listen";
+        if (mode === "spell" && w.e.replace(/[^a-z]/gi, "").length > 12) mode = "meaning";
         let others = distractorPool.filter((x) => x.e !== w.e);
-        if (mode === "arabic") others = others.filter((x) => x.a);
-        if (others.length < 3) others = ALL.filter((x) => x.e !== w.e && (mode === "arabic" ? !!x.a : true));
+        const needArabic = mode === "arabic" || mode === "reverse";
+        if (needArabic) others = others.filter((x) => x.a);
+        if (others.length < 3) others = ALL.filter((x) => x.e !== w.e && (needArabic ? !!x.a : true));
         return { word: w, mode, options: shuffle([w].concat(shuffle(others).slice(0, 3))) };
       });
     setDeckId(id);
@@ -720,6 +741,45 @@ export default function KalimatiApp() {
               </div>
             </section>
 
+            {/* game modes */}
+            <section style={{ ...card("#FFFFFF"), padding: "22px 26px", display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <div style={{ fontFamily: "Lora, serif", fontSize: 21, fontWeight: 600 }}>Choose a game</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#9A8A7B" }}>then pick a little book below</div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
+                {GAME_MODES.map((m) => {
+                  const on = gameMode === m.id;
+                  return (
+                    <button
+                      key={m.id}
+                      className="k-press"
+                      onClick={() => setGameMode(m.id)}
+                      style={{
+                        ...card(on ? "#FFE3A8" : "#FFFBF4", 20),
+                        border: `3px solid ${on ? INK : "#E0CDB4"}`,
+                        boxShadow: on ? `0 5px 0 ${INK}` : "none",
+                        padding: "14px 16px",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        color: INK,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        minHeight: 64,
+                      }}
+                    >
+                      <span style={{ fontSize: 24, lineHeight: 1 }}>{m.icon}</span>
+                      <span style={{ minWidth: 0 }}>
+                        <span style={{ display: "block", fontSize: 16, fontWeight: 800 }}>{m.label}</span>
+                        <span style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#7C6E60", marginTop: 2 }}>{m.blurb}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
             {/* shelves + decks */}
             <section style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -1108,6 +1168,109 @@ export default function KalimatiApp() {
 
 /* ---------------- practice screen ---------------- */
 
+const WRONG: Word = { e: "__wrong__", a: "", t: "", m: "" };
+
+function SpellBoard({
+  word,
+  picked,
+  onPick,
+}: {
+  word: Word;
+  picked: Word | null;
+  onPick: (w: Word) => void;
+}) {
+  const target = word.e;
+  const letters = useMemo(() => shuffle(target.split("").map((ch, i) => ({ ch, i }))), [target]);
+  const [built, setBuilt] = useState<{ ch: string; i: number }[]>([]);
+
+  useEffect(() => {
+    setBuilt([]);
+  }, [target]);
+
+  const used = new Set(built.map((b) => b.i));
+  const done = !!picked;
+  const attempt = built.map((b) => b.ch).join("");
+
+  const check = () => {
+    if (done) return;
+    onPick(attempt.toLowerCase() === target.toLowerCase() ? word : WRONG);
+  };
+
+  const tile = (bg: string): CSSProperties => ({
+    minWidth: 46,
+    minHeight: 52,
+    padding: "8px 10px",
+    borderRadius: 16,
+    border: `3px solid ${INK}`,
+    background: bg,
+    boxShadow: `0 4px 0 ${INK}`,
+    fontSize: 24,
+    fontWeight: 800,
+    color: INK,
+    cursor: done ? "default" : "pointer",
+    fontFamily: "Lora, serif",
+  });
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          flexWrap: "wrap",
+          justifyContent: "center",
+          minHeight: 62,
+          width: "100%",
+          padding: "8px 10px",
+          borderRadius: 20,
+          border: "3px dashed #E0CDB4",
+          background: "#FFFBF4",
+          alignItems: "center",
+        }}
+      >
+        {built.length === 0 && <span style={{ fontSize: 15, fontWeight: 700, color: "#B6A695" }}>Tap the letters in order</span>}
+        {built.map((b, n) => (
+          <button
+            key={`${b.i}-${n}`}
+            onClick={() => !done && setBuilt((cur) => cur.filter((_, k) => k !== n))}
+            style={tile("#FFE3A8")}
+          >
+            {b.ch === " " ? "␣" : b.ch}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+        {letters.map((l) => (
+          <button
+            key={l.i}
+            disabled={used.has(l.i) || done}
+            onClick={() => setBuilt((cur) => cur.concat([l]))}
+            style={{ ...tile("#FFFFFF"), opacity: used.has(l.i) ? 0.3 : 1 }}
+          >
+            {l.ch === " " ? "␣" : l.ch}
+          </button>
+        ))}
+      </div>
+
+      {!done && (
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+          <button onClick={() => setBuilt([])} style={{ ...pill("#FFFFFF", INK), padding: "12px 22px", fontSize: 15 }}>
+            Clear
+          </button>
+          <button
+            onClick={check}
+            disabled={!built.length}
+            style={{ ...pill(INK, "#FFF6EC", "#A08E7C"), padding: "12px 26px", fontSize: 16, opacity: built.length ? 1 : 0.5 }}
+          >
+            Check it
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PracticeScreen({
   q,
   idx,
@@ -1135,8 +1298,31 @@ function PracticeScreen({
 }) {
   const w = q.word;
   const right = !!picked && picked.e === w.e;
-  const arabicMode = q.mode === "arabic";
+  const mode = q.mode;
+  const arabicOptions = mode === "arabic";
+  const englishOptions = mode === "reverse" || mode === "listen";
+  const spellMode = mode === "spell";
   const pic = picFor(w);
+
+  useEffect(() => {
+    if (mode === "listen") {
+      const t = setTimeout(() => onSay(w, false), 320);
+      return () => clearTimeout(t);
+    }
+    return undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [w.e, mode]);
+
+  const taskLabel =
+    mode === "arabic"
+      ? "how do you say it in Arabic"
+      : mode === "reverse"
+        ? "read the Arabic — which word is it"
+        : mode === "listen"
+          ? "listen, then find the word"
+          : mode === "spell"
+            ? "build the word, letter by letter"
+            : "what does it mean";
 
   const optionStyle = (opt: Word): CSSProperties => {
     const base: CSSProperties = {
@@ -1206,65 +1392,101 @@ function PracticeScreen({
 
       <section style={{ ...card("#FFFFFF", 32), padding: "30px 26px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
         <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "#9A8A7B" }}>
-          {deckName} · {arabicMode ? "how do you say" : "what does it mean"}
+          {deckName} · {taskLabel}
         </div>
-        <div style={{ position: "relative" }}>
-          <div style={picStyle(pic, "lg")}>{picText(pic)}</div>
-          {picked && right && (
-            <div style={{ position: "absolute", inset: 0, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {[
-                { s: 26, x: "-74px", y: "-58px", d: "0s", c: "⭐" },
-                { s: 22, x: "76px", y: "-50px", d: "0.04s", c: "✨" },
-                { s: 24, x: "-84px", y: "40px", d: "0.08s", c: "🎉" },
-                { s: 20, x: "82px", y: "46px", d: "0.02s", c: "⭐" },
-                { s: 22, x: "0px", y: "-86px", d: "0.06s", c: "✨" },
-              ].map((b, i) => (
-                <span
-                  key={i}
-                  style={{
-                    position: "absolute",
-                    fontSize: b.s,
-                    ["--bx" as string]: b.x,
-                    ["--by" as string]: b.y,
-                    animation: `burst 0.75s ease-out ${b.d} forwards`,
-                  }}
-                >
-                  {b.c}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-        <div style={{ fontFamily: "Lora, serif", fontSize: 52, fontWeight: 600, lineHeight: 1.05 }}>{w.e}</div>
+
+        {mode === "listen" ? (
+          <div style={{ ...picStyle({ kind: "emoji", value: "🎧" }, "lg"), background: "#E6EEFB" }}>🎧</div>
+        ) : (
+          <div style={{ position: "relative" }}>
+            <div style={picStyle(pic, "lg")}>{picText(pic)}</div>
+            {picked && right && (
+              <div style={{ position: "absolute", inset: 0, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {[
+                  { s: 26, x: "-74px", y: "-58px", d: "0s", c: "⭐" },
+                  { s: 22, x: "76px", y: "-50px", d: "0.04s", c: "✨" },
+                  { s: 24, x: "-84px", y: "40px", d: "0.08s", c: "🎉" },
+                  { s: 20, x: "82px", y: "46px", d: "0.02s", c: "⭐" },
+                  { s: 22, x: "0px", y: "-86px", d: "0.06s", c: "✨" },
+                ].map((b, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      position: "absolute",
+                      fontSize: b.s,
+                      ["--bx" as string]: b.x,
+                      ["--by" as string]: b.y,
+                      animation: `burst 0.75s ease-out ${b.d} forwards`,
+                    }}
+                  >
+                    {b.c}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {mode === "reverse" ? (
+          <>
+            <div dir="rtl" style={{ fontFamily: "'Noto Naskh Arabic', serif", fontSize: 46, fontWeight: 700, lineHeight: 1.5 }}>{w.a}</div>
+            <div style={{ fontSize: 17, fontWeight: 700, fontStyle: "italic", color: "#7C6E60" }}>{w.t}</div>
+          </>
+        ) : mode === "listen" ? (
+          <div style={{ fontFamily: "Lora, serif", fontSize: 44, fontWeight: 600, lineHeight: 1.05 }}>
+            {picked ? w.e : "? ? ?"}
+          </div>
+        ) : (
+          <div style={{ fontFamily: "Lora, serif", fontSize: 52, fontWeight: 600, lineHeight: 1.05 }}>
+            {spellMode && !picked ? w.m : w.e}
+          </div>
+        )}
+
         <div style={{ fontSize: 17, color: "#6E6055", fontWeight: 600, maxWidth: 520 }}>
-          {arabicMode ? w.m : "Read it together, then pick what it means."}
+          {mode === "arabic"
+            ? w.m
+            : mode === "reverse"
+              ? "Say the Arabic out loud, then pick the English word."
+              : mode === "listen"
+                ? "Tap the ear to hear it again, then choose the word you heard."
+                : spellMode
+                  ? "Spell the English word for this picture."
+                  : "Read it together, then pick what it means."}
         </div>
+
         <button
           className="k-press"
-          onClick={() => onSay(w, false)}
+          onClick={() => onSay(w, mode === "reverse")}
           style={{ ...pill("#E6EEFB", INK), padding: "11px 20px", fontSize: 15, minHeight: 44, marginTop: 2 }}
         >
-          Hear the English word
+          {mode === "listen" ? "👂 Hear it again" : mode === "reverse" ? "Hear the Arabic" : "Hear the English word"}
         </button>
       </section>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 14 }}>
-        {q.options.map((o) => (
-          <button key={o.e} onClick={() => onPick(o)} style={optionStyle(o)}>
-            <div
-              dir={arabicMode ? "rtl" : "ltr"}
-              style={
-                arabicMode
-                  ? { fontFamily: "'Noto Naskh Arabic', serif", fontSize: 34, fontWeight: 700, lineHeight: 1.5 }
-                  : { fontSize: 16, fontWeight: 700, lineHeight: 1.4 }
-              }
-            >
-              {arabicMode ? o.a : o.m}
-            </div>
-            {arabicMode && <div style={{ fontSize: 15, fontWeight: 700, fontStyle: "italic", color: "#7C6E60" }}>{o.t}</div>}
-          </button>
-        ))}
-      </div>
+      {spellMode ? (
+        <SpellBoard word={w} picked={picked} onPick={onPick} />
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 14 }}>
+          {q.options.map((o) => (
+            <button key={o.e} onClick={() => onPick(o)} style={optionStyle(o)}>
+              {englishOptions && <div style={{ fontSize: 30, lineHeight: 1 }}>{picText(picFor(o))}</div>}
+              <div
+                dir={arabicOptions ? "rtl" : "ltr"}
+                style={
+                  arabicOptions
+                    ? { fontFamily: "'Noto Naskh Arabic', serif", fontSize: 34, fontWeight: 700, lineHeight: 1.5 }
+                    : englishOptions
+                      ? { fontFamily: "Lora, serif", fontSize: 24, fontWeight: 600, lineHeight: 1.2 }
+                      : { fontSize: 16, fontWeight: 700, lineHeight: 1.4 }
+                }
+              >
+                {arabicOptions ? o.a : englishOptions ? o.e : o.m}
+              </div>
+              {arabicOptions && <div style={{ fontSize: 15, fontWeight: 700, fontStyle: "italic", color: "#7C6E60" }}>{o.t}</div>}
+            </button>
+          ))}
+        </div>
+      )}
 
       {picked && (
         <div
@@ -1284,11 +1506,11 @@ function PracticeScreen({
             <div style={{ fontFamily: "Lora, serif", fontSize: 22, fontWeight: 600 }}>
               {right ? PRAISE[idx % PRAISE.length] : KIND[idx % KIND.length]}
             </div>
-            {arabicMode && (
+            {!!w.a && (
               <div dir="rtl" style={{ fontFamily: "'Noto Naskh Arabic', serif", fontSize: 30, fontWeight: 700, lineHeight: 1.5 }}>{w.a}</div>
             )}
             <div style={{ fontSize: 16, fontWeight: 600, color: "#4E443B" }}>
-              {arabicMode ? `Say it together: ${w.t} — "${w.e}" means ${w.m}.` : `"${w.e}" means ${w.m}.`}
+              {w.a ? `Say it together: ${w.t} — "${w.e}" means ${w.m}.` : `"${w.e}" means ${w.m}.`}
             </div>
           </div>
           <button onClick={onFav} style={favBtnStyle(fav)}>{fav ? "★ Starred" : "☆ Star it"}</button>
