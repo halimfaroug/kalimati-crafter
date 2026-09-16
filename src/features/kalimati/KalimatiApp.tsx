@@ -284,7 +284,7 @@ export default function KalimatiApp() {
   const say = useCallback((w: Word, both: boolean) => void sayWord(w, both, recKeys), [recKeys]);
 
   /* session building */
-  const start = (id: string) => {
+  const start = (id: string, requested: GameMode = gameMode) => {
     const len = SESSION_LENGTH;
     let pool: Word[];
     let distractorPool: Word[];
@@ -296,14 +296,23 @@ export default function KalimatiApp() {
       pool = deck.words;
       distractorPool = deck.words;
     }
+    if (requested === "arabic" || requested === "reverse" || requested === "listen") {
+      const withArabic = pool.filter((w) => w.a);
+      if (withArabic.length >= 4) pool = withArabic;
+    }
     if (!pool.length) return;
+    const MIX: QMode[] = ["arabic", "reverse", "meaning", "listen", "spell"];
     const qs: Question[] = shuffle(pool)
       .slice(0, len)
-      .map((w) => {
-        const mode: Question["mode"] = w.a ? "arabic" : "meaning";
+      .map((w, i) => {
+        let mode: QMode = requested === "mix" ? MIX[i % MIX.length]! : (requested as QMode);
+        if (!w.a && (mode === "arabic" || mode === "reverse")) mode = "meaning";
+        if (!w.a && mode === "listen") mode = "listen";
+        if (mode === "spell" && w.e.replace(/[^a-z]/gi, "").length > 12) mode = "meaning";
         let others = distractorPool.filter((x) => x.e !== w.e);
-        if (mode === "arabic") others = others.filter((x) => x.a);
-        if (others.length < 3) others = ALL.filter((x) => x.e !== w.e && (mode === "arabic" ? !!x.a : true));
+        const needArabic = mode === "arabic" || mode === "reverse";
+        if (needArabic) others = others.filter((x) => x.a);
+        if (others.length < 3) others = ALL.filter((x) => x.e !== w.e && (needArabic ? !!x.a : true));
         return { word: w, mode, options: shuffle([w].concat(shuffle(others).slice(0, 3))) };
       });
     setDeckId(id);
