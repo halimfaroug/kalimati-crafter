@@ -215,6 +215,7 @@ export default function KalimatiApp() {
   const [missed, setMissed] = useState<Word[]>([]);
   const [earned, setEarned] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [gameMode, setGameMode] = useState<GameMode>("mix");
 
   const [progress, setProgress] = useState<Progress>(emptyProgress);
   const [recKeys, setRecKeys] = useState<Flags>({});
