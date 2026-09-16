@@ -741,6 +741,45 @@ export default function KalimatiApp() {
               </div>
             </section>
 
+            {/* game modes */}
+            <section style={{ ...card("#FFFFFF"), padding: "22px 26px", display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <div style={{ fontFamily: "Lora, serif", fontSize: 21, fontWeight: 600 }}>Choose a game</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#9A8A7B" }}>then pick a little book below</div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
+                {GAME_MODES.map((m) => {
+                  const on = gameMode === m.id;
+                  return (
+                    <button
+                      key={m.id}
+                      className="k-press"
+                      onClick={() => setGameMode(m.id)}
+                      style={{
+                        ...card(on ? "#FFE3A8" : "#FFFBF4", 20),
+                        border: `3px solid ${on ? INK : "#E0CDB4"}`,
+                        boxShadow: on ? `0 5px 0 ${INK}` : "none",
+                        padding: "14px 16px",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        color: INK,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        minHeight: 64,
+                      }}
+                    >
+                      <span style={{ fontSize: 24, lineHeight: 1 }}>{m.icon}</span>
+                      <span style={{ minWidth: 0 }}>
+                        <span style={{ display: "block", fontSize: 16, fontWeight: 800 }}>{m.label}</span>
+                        <span style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#7C6E60", marginTop: 2 }}>{m.blurb}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
             {/* shelves + decks */}
             <section style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
