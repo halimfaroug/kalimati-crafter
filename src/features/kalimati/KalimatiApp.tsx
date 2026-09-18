@@ -46,9 +46,9 @@ const KIND = [
 const SESSION_LENGTH = 6;
 const INK = "#3B322B";
 
-type QMode = "arabic" | "meaning" | "reverse" | "listen" | "spell";
+type QMode = "arabic" | "meaning" | "reverse" | "listen" | "spell" | "sentence";
 type Question = { word: Word; mode: QMode; options: Word[] };
-type GameMode = "mix" | "arabic" | "meaning" | "reverse" | "listen" | "spell";
+type GameMode = "mix" | "arabic" | "meaning" | "reverse" | "listen" | "spell" | "sentence";
 type Flags = Record<string, boolean>;
 
 const GAME_MODES: { id: GameMode; label: string; icon: string; blurb: string }[] = [
@@ -58,7 +58,10 @@ const GAME_MODES: { id: GameMode; label: string; icon: string; blurb: string }[]
   { id: "meaning", label: "What does it mean?", icon: "💭", blurb: "pick the meaning" },
   { id: "listen", label: "Listen and find", icon: "👂", blurb: "hear it, then choose" },
   { id: "spell", label: "Spell it out", icon: "🧩", blurb: "build the word from letters" },
+  { id: "sentence", label: "Build the sentence", icon: "🧱", blurb: "put the Arabic words in order" },
 ];
+
+const arabicTokens = (w: Word) => w.a.trim().split(/\s+/).filter(Boolean);
 
 type Progress = {
   known: Flags;
