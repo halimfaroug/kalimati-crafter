@@ -209,7 +209,7 @@ function Mascot({ mood }: { mood: "happy" | "oops" | "waiting" }) {
 
 export default function KalimatiApp() {
   const [screen, setScreen] = useState<"home" | "practice" | "done" | "record">("home");
-  const [tab, setTab] = useState<"english" | "science">("english");
+  const [tab, setTab] = useState<"english" | "science" | "arabic">("english");
   const [deckId, setDeckId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [idx, setIdx] = useState(0);
