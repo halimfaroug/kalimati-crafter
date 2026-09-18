@@ -165,6 +165,40 @@ function favBtnStyle(on: boolean, small?: boolean): CSSProperties {
   };
 }
 
+const DECOR = [
+  { e: "🎈", top: "6%", left: "3%", size: 42, dur: 7 },
+  { e: "🌹", top: "22%", left: "8%", size: 34, dur: 9 },
+  { e: "🎈", top: "48%", left: "2%", size: 36, dur: 8 },
+  { e: "🌷", top: "72%", left: "7%", size: 32, dur: 10 },
+  { e: "🎈", top: "10%", left: "92%", size: 44, dur: 8 },
+  { e: "🌹", top: "36%", left: "95%", size: 34, dur: 11 },
+  { e: "🎈", top: "62%", left: "91%", size: 38, dur: 9 },
+  { e: "🌸", top: "84%", left: "94%", size: 30, dur: 7 },
+];
+
+function FloatingDecor() {
+  return (
+    <div aria-hidden style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
+      {DECOR.map((d, i) => (
+        <span
+          key={i}
+          style={{
+            position: "absolute",
+            top: d.top,
+            left: d.left,
+            fontSize: d.size,
+            opacity: 0.55,
+            animation: `floaty ${d.dur}s ease-in-out ${i * 0.4}s infinite`,
+          }}
+        >
+          {d.e}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+
 function Mascot({ mood }: { mood: "happy" | "oops" | "waiting" }) {
   const bg = mood === "happy" ? "#FFE3A8" : mood === "oops" ? "#FFFFFF" : "#FFF6EC";
   const face: CSSProperties = {
