@@ -524,6 +524,7 @@ export const DECKS: Deck[] = [
     W('my name is', 'اِسْمي', 'ismee', 'how you tell someone who you are'),
     W('how are you', 'كَيْف حالُك', 'kayfa haaluk', 'a friendly question when you meet')
   ] },
+
   { id: 'pronouns', shelf: 'arabic', unit: 'Grammar 1', title: 'Words for People', glyph: 'ضَمائِر', fill: '#E6EEFB', words: [
     W('I', 'أَنا', 'ana', 'the word you use when you talk about yourself'),
     W('you (boy)', 'أَنْتَ', 'anta', 'you, when you talk to a boy or a man'),
