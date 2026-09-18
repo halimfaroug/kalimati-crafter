@@ -67,7 +67,7 @@ export const PICS: Record<string, string> = {
   'good morning': '🌅', 'good night': '🌙', welcome: '🫖', 'my name is': '🏷️', 'how are you': '❓'
 };
 
-export const DECK_ICONS: Record<string, string> = { colours: '🎨', numbers: '🔢', daysmonths: '📅', timesofday: '🌤️', body: '🖐️', clothes: '👕', home: '🏠', school: '✏️', food: '🍎', city: '🚌', jobs: '👩‍⚕️', animals: '🐘', actions: '🏃', nature: '🌳', environment: '🌍', forces: '💪', materials: '🪵', growing: '🌱', light: '💡', electricity: '⚡', family: '👨‍👩‍👧', feelings: '😊', fruitveg: '🍓', sports: '⚽', weather: '🌦️', shapes: '🔷', greetings: '👋' };
+export const DECK_ICONS: Record<string, string> = { colours: '🎨', numbers: '🔢', daysmonths: '📅', timesofday: '🌤️', body: '🖐️', clothes: '👕', home: '🏠', school: '✏️', food: '🍎', city: '🚌', jobs: '👩‍⚕️', animals: '🐘', actions: '🏃', nature: '🌳', environment: '🌍', forces: '💪', materials: '🪵', growing: '🌱', light: '💡', electricity: '⚡', family: '👨‍👩‍👧', feelings: '😊', fruitveg: '🍓', sports: '⚽', weather: '🌦️', shapes: '🔷', greetings: '👋', pronouns: '🙋', questionwords: '❓', thisthat: '👉', prepositions: '📍', verbsnow: '🏃‍♂️', negation: '🚫', sentences: '📝', phrases: '💬', classroom: '🏫', outandabout: '🧭' };
 
 export const PRAISE = ['Yes! You got it!', 'Brilliant!', 'Perfect — well done!', 'Ooh, nice one!', 'That is exactly right!', 'Clever you!', 'Spot on!'];
 export const KIND = ['Nearly! Here it is.', 'Good try — look again.', 'Almost! This is the one.', 'Not quite — now you know it.', 'Close one! Here it is.'];
@@ -523,7 +523,7 @@ export const DECKS: Deck[] = [
     W('welcome', 'أَهْلًا وَسَهْلًا', 'ahlan wa sahlan', 'a kind word for a visitor'),
     W('my name is', 'اِسْمي', 'ismee', 'how you tell someone who you are'),
     W('how are you', 'كَيْف حالُك', 'kayfa haaluk', 'a friendly question when you meet')
-  ] }
+  ] },
   { id: 'pronouns', shelf: 'arabic', unit: 'Grammar 1', title: 'Words for People', glyph: 'ضَمائِر', fill: '#E6EEFB', words: [
     W('I', 'أَنا', 'ana', 'the word you use when you talk about yourself'),
     W('you (boy)', 'أَنْتَ', 'anta', 'you, when you talk to a boy or a man'),

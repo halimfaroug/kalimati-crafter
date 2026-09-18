@@ -46,9 +46,9 @@ const KIND = [
 const SESSION_LENGTH = 6;
 const INK = "#3B322B";
 
-type QMode = "arabic" | "meaning" | "reverse" | "listen" | "spell";
+type QMode = "arabic" | "meaning" | "reverse" | "listen" | "spell" | "sentence";
 type Question = { word: Word; mode: QMode; options: Word[] };
-type GameMode = "mix" | "arabic" | "meaning" | "reverse" | "listen" | "spell";
+type GameMode = "mix" | "arabic" | "meaning" | "reverse" | "listen" | "spell" | "sentence";
 type Flags = Record<string, boolean>;
 
 const GAME_MODES: { id: GameMode; label: string; icon: string; blurb: string }[] = [
@@ -58,7 +58,10 @@ const GAME_MODES: { id: GameMode; label: string; icon: string; blurb: string }[]
   { id: "meaning", label: "What does it mean?", icon: "💭", blurb: "pick the meaning" },
   { id: "listen", label: "Listen and find", icon: "👂", blurb: "hear it, then choose" },
   { id: "spell", label: "Spell it out", icon: "🧩", blurb: "build the word from letters" },
+  { id: "sentence", label: "Build the sentence", icon: "🧱", blurb: "put the Arabic words in order" },
 ];
+
+const arabicTokens = (w: Word) => w.a.trim().split(/\s+/).filter(Boolean);
 
 type Progress = {
   known: Flags;
@@ -206,7 +209,7 @@ function Mascot({ mood }: { mood: "happy" | "oops" | "waiting" }) {
 
 export default function KalimatiApp() {
   const [screen, setScreen] = useState<"home" | "practice" | "done" | "record">("home");
-  const [tab, setTab] = useState<"english" | "science">("english");
+  const [tab, setTab] = useState<"english" | "science" | "arabic">("english");
   const [deckId, setDeckId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [idx, setIdx] = useState(0);
@@ -300,15 +303,21 @@ export default function KalimatiApp() {
       const withArabic = pool.filter((w) => w.a);
       if (withArabic.length >= 4) pool = withArabic;
     }
+    if (requested === "sentence") {
+      const multi = pool.filter((w) => arabicTokens(w).length >= 2);
+      if (multi.length >= 2) pool = multi;
+    }
     if (!pool.length) return;
-    const MIX: QMode[] = ["arabic", "reverse", "meaning", "listen", "spell"];
+    const MIX: QMode[] = ["arabic", "reverse", "meaning", "listen", "spell", "sentence"];
     const qs: Question[] = shuffle(pool)
       .slice(0, len)
       .map((w, i) => {
         let mode: QMode = requested === "mix" ? MIX[i % MIX.length]! : (requested as QMode);
+        if (mode === "sentence" && arabicTokens(w).length < 2) mode = w.a ? "arabic" : "meaning";
         if (!w.a && (mode === "arabic" || mode === "reverse")) mode = "meaning";
         if (!w.a && mode === "listen") mode = "listen";
-        if (mode === "spell" && w.e.replace(/[^a-z]/gi, "").length > 12) mode = "meaning";
+        if (mode === "spell" && (w.e.replace(/[^a-z]/gi, "").length > 12 || /\s/.test(w.e.trim())))
+          mode = arabicTokens(w).length >= 2 ? "sentence" : w.a ? "arabic" : "meaning";
         let others = distractorPool.filter((x) => x.e !== w.e);
         const needArabic = mode === "arabic" || mode === "reverse";
         if (needArabic) others = others.filter((x) => x.a);
@@ -787,6 +796,7 @@ export default function KalimatiApp() {
                   [
                     ["english", "English book"],
                     ["science", "Science book"],
+                    ["arabic", "Arabic book"],
                   ] as const
                 ).map(([id, label]) => {
                   const on = tab === id;
@@ -1170,6 +1180,107 @@ export default function KalimatiApp() {
 
 const WRONG: Word = { e: "__wrong__", a: "", t: "", m: "" };
 
+function SentenceBoard({
+  word,
+  picked,
+  onPick,
+}: {
+  word: Word;
+  picked: Word | null;
+  onPick: (w: Word) => void;
+}) {
+  const target = word.a.trim();
+  const parts = useMemo(() => shuffle(target.split(/\s+/).map((ch, i) => ({ ch, i }))), [target]);
+  const [built, setBuilt] = useState<{ ch: string; i: number }[]>([]);
+
+  useEffect(() => {
+    setBuilt([]);
+  }, [target]);
+
+  const used = new Set(built.map((b) => b.i));
+  const done = !!picked;
+
+  const check = () => {
+    if (done) return;
+    const attempt = built.map((b) => b.ch).join(" ");
+    onPick(attempt === target ? word : WRONG);
+  };
+
+  const chip = (bg: string): CSSProperties => ({
+    padding: "10px 16px",
+    borderRadius: 18,
+    border: `3px solid ${INK}`,
+    background: bg,
+    boxShadow: `0 4px 0 ${INK}`,
+    fontSize: 26,
+    fontWeight: 700,
+    color: INK,
+    cursor: done ? "default" : "pointer",
+    fontFamily: "'Noto Naskh Arabic', serif",
+    lineHeight: 1.6,
+  });
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center" }}>
+      <div
+        dir="rtl"
+        style={{
+          display: "flex",
+          gap: 8,
+          flexWrap: "wrap",
+          justifyContent: "center",
+          minHeight: 66,
+          width: "100%",
+          padding: "8px 10px",
+          borderRadius: 20,
+          border: "3px dashed #E0CDB4",
+          background: "#FFFBF4",
+          alignItems: "center",
+        }}
+      >
+        {built.length === 0 && (
+          <span style={{ fontSize: 15, fontWeight: 700, color: "#B6A695", fontFamily: "Lora, serif" }}>
+            Tap the Arabic words in order
+          </span>
+        )}
+        {built.map((b, n) => (
+          <button key={`${b.i}-${n}`} onClick={() => !done && setBuilt((cur) => cur.filter((_, k) => k !== n))} style={chip("#FFE3A8")}>
+            {b.ch}
+          </button>
+        ))}
+      </div>
+
+      <div dir="rtl" style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+        {parts.map((p) => (
+          <button
+            key={p.i}
+            disabled={used.has(p.i) || done}
+            onClick={() => setBuilt((cur) => cur.concat([p]))}
+            style={{ ...chip("#FFFFFF"), opacity: used.has(p.i) ? 0.3 : 1 }}
+          >
+            {p.ch}
+          </button>
+        ))}
+      </div>
+
+      {!done && (
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+          <button onClick={() => setBuilt([])} style={{ ...pill("#FFFFFF", INK), padding: "12px 22px", fontSize: 15 }}>
+            Clear
+          </button>
+          <button
+            onClick={check}
+            disabled={!built.length}
+            style={{ ...pill(INK, "#FFF6EC", "#A08E7C"), padding: "12px 26px", fontSize: 16, opacity: built.length ? 1 : 0.5 }}
+          >
+            Check it
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SpellBoard({
   word,
   picked,
@@ -1302,6 +1413,7 @@ function PracticeScreen({
   const arabicOptions = mode === "arabic";
   const englishOptions = mode === "reverse" || mode === "listen";
   const spellMode = mode === "spell";
+  const sentenceMode = mode === "sentence";
   const pic = picFor(w);
 
   useEffect(() => {
@@ -1322,7 +1434,9 @@ function PracticeScreen({
           ? "listen, then find the word"
           : mode === "spell"
             ? "build the word, letter by letter"
-            : "what does it mean";
+            : mode === "sentence"
+              ? "put the Arabic words in order"
+              : "what does it mean";
 
   const optionStyle = (opt: Word): CSSProperties => {
     const base: CSSProperties = {
@@ -1451,7 +1565,9 @@ function PracticeScreen({
                 ? "Tap the ear to hear it again, then choose the word you heard."
                 : spellMode
                   ? "Spell the English word for this picture."
-                  : "Read it together, then pick what it means."}
+                  : sentenceMode
+                    ? "Put the Arabic words in the right order to say this."
+                    : "Read it together, then pick what it means."}
         </div>
 
         <button
@@ -1459,12 +1575,20 @@ function PracticeScreen({
           onClick={() => onSay(w, mode === "reverse")}
           style={{ ...pill("#E6EEFB", INK), padding: "11px 20px", fontSize: 15, minHeight: 44, marginTop: 2 }}
         >
-          {mode === "listen" ? "👂 Hear it again" : mode === "reverse" ? "Hear the Arabic" : "Hear the English word"}
+          {mode === "listen"
+            ? "👂 Hear it again"
+            : mode === "reverse"
+              ? "Hear the Arabic"
+              : sentenceMode
+                ? "Hear it in English"
+                : "Hear the English word"}
         </button>
       </section>
 
       {spellMode ? (
         <SpellBoard word={w} picked={picked} onPick={onPick} />
+      ) : sentenceMode ? (
+        <SentenceBoard word={w} picked={picked} onPick={onPick} />
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 14 }}>
           {q.options.map((o) => (
