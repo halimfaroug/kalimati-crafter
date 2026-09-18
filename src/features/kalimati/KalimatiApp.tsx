@@ -1563,7 +1563,9 @@ function PracticeScreen({
                 ? "Tap the ear to hear it again, then choose the word you heard."
                 : spellMode
                   ? "Spell the English word for this picture."
-                  : "Read it together, then pick what it means."}
+                  : sentenceMode
+                    ? "Put the Arabic words in the right order to say this."
+                    : "Read it together, then pick what it means."}
         </div>
 
         <button
@@ -1571,12 +1573,20 @@ function PracticeScreen({
           onClick={() => onSay(w, mode === "reverse")}
           style={{ ...pill("#E6EEFB", INK), padding: "11px 20px", fontSize: 15, minHeight: 44, marginTop: 2 }}
         >
-          {mode === "listen" ? "👂 Hear it again" : mode === "reverse" ? "Hear the Arabic" : "Hear the English word"}
+          {mode === "listen"
+            ? "👂 Hear it again"
+            : mode === "reverse"
+              ? "Hear the Arabic"
+              : sentenceMode
+                ? "Hear it in English"
+                : "Hear the English word"}
         </button>
       </section>
 
       {spellMode ? (
         <SpellBoard word={w} picked={picked} onPick={onPick} />
+      ) : sentenceMode ? (
+        <SentenceBoard word={w} picked={picked} onPick={onPick} />
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 14 }}>
           {q.options.map((o) => (
