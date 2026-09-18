@@ -67,7 +67,7 @@ export const PICS: Record<string, string> = {
   'good morning': '🌅', 'good night': '🌙', welcome: '🫖', 'my name is': '🏷️', 'how are you': '❓'
 };
 
-export const DECK_ICONS: Record<string, string> = { colours: '🎨', numbers: '🔢', daysmonths: '📅', timesofday: '🌤️', body: '🖐️', clothes: '👕', home: '🏠', school: '✏️', food: '🍎', city: '🚌', jobs: '👩‍⚕️', animals: '🐘', actions: '🏃', nature: '🌳', environment: '🌍', forces: '💪', materials: '🪵', growing: '🌱', light: '💡', electricity: '⚡', family: '👨‍👩‍👧', feelings: '😊', fruitveg: '🍓', sports: '⚽', weather: '🌦️', shapes: '🔷', greetings: '👋' };
+export const DECK_ICONS: Record<string, string> = { colours: '🎨', numbers: '🔢', daysmonths: '📅', timesofday: '🌤️', body: '🖐️', clothes: '👕', home: '🏠', school: '✏️', food: '🍎', city: '🚌', jobs: '👩‍⚕️', animals: '🐘', actions: '🏃', nature: '🌳', environment: '🌍', forces: '💪', materials: '🪵', growing: '🌱', light: '💡', electricity: '⚡', family: '👨‍👩‍👧', feelings: '😊', fruitveg: '🍓', sports: '⚽', weather: '🌦️', shapes: '🔷', greetings: '👋', pronouns: '🙋', questionwords: '❓', thisthat: '👉', prepositions: '📍', verbsnow: '🏃‍♂️', negation: '🚫', sentences: '📝', phrases: '💬', classroom: '🏫', outandabout: '🧭' };
 
 export const PRAISE = ['Yes! You got it!', 'Brilliant!', 'Perfect — well done!', 'Ooh, nice one!', 'That is exactly right!', 'Clever you!', 'Spot on!'];
 export const KIND = ['Nearly! Here it is.', 'Good try — look again.', 'Almost! This is the one.', 'Not quite — now you know it.', 'Close one! Here it is.'];
