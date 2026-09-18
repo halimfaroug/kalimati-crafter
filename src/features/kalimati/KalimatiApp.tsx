@@ -1434,7 +1434,9 @@ function PracticeScreen({
           ? "listen, then find the word"
           : mode === "spell"
             ? "build the word, letter by letter"
-            : "what does it mean";
+            : mode === "sentence"
+              ? "put the Arabic words in order"
+              : "what does it mean";
 
   const optionStyle = (opt: Word): CSSProperties => {
     const base: CSSProperties = {
