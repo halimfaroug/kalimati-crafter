@@ -303,15 +303,21 @@ export default function KalimatiApp() {
       const withArabic = pool.filter((w) => w.a);
       if (withArabic.length >= 4) pool = withArabic;
     }
+    if (requested === "sentence") {
+      const multi = pool.filter((w) => arabicTokens(w).length >= 2);
+      if (multi.length >= 2) pool = multi;
+    }
     if (!pool.length) return;
-    const MIX: QMode[] = ["arabic", "reverse", "meaning", "listen", "spell"];
+    const MIX: QMode[] = ["arabic", "reverse", "meaning", "listen", "spell", "sentence"];
     const qs: Question[] = shuffle(pool)
       .slice(0, len)
       .map((w, i) => {
         let mode: QMode = requested === "mix" ? MIX[i % MIX.length]! : (requested as QMode);
+        if (mode === "sentence" && arabicTokens(w).length < 2) mode = w.a ? "arabic" : "meaning";
         if (!w.a && (mode === "arabic" || mode === "reverse")) mode = "meaning";
         if (!w.a && mode === "listen") mode = "listen";
-        if (mode === "spell" && w.e.replace(/[^a-z]/gi, "").length > 12) mode = "meaning";
+        if (mode === "spell" && (w.e.replace(/[^a-z]/gi, "").length > 12 || /\s/.test(w.e.trim())))
+          mode = arabicTokens(w).length >= 2 ? "sentence" : w.a ? "arabic" : "meaning";
         let others = distractorPool.filter((x) => x.e !== w.e);
         const needArabic = mode === "arabic" || mode === "reverse";
         if (needArabic) others = others.filter((x) => x.a);
