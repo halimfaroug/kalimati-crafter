@@ -1413,6 +1413,7 @@ function PracticeScreen({
   const arabicOptions = mode === "arabic";
   const englishOptions = mode === "reverse" || mode === "listen";
   const spellMode = mode === "spell";
+  const sentenceMode = mode === "sentence";
   const pic = picFor(w);
 
   useEffect(() => {
