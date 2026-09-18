@@ -796,6 +796,7 @@ export default function KalimatiApp() {
                   [
                     ["english", "English book"],
                     ["science", "Science book"],
+                    ["arabic", "Arabic book"],
                   ] as const
                 ).map(([id, label]) => {
                   const on = tab === id;
