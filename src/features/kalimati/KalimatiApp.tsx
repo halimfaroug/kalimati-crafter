@@ -1180,6 +1180,107 @@ export default function KalimatiApp() {
 
 const WRONG: Word = { e: "__wrong__", a: "", t: "", m: "" };
 
+function SentenceBoard({
+  word,
+  picked,
+  onPick,
+}: {
+  word: Word;
+  picked: Word | null;
+  onPick: (w: Word) => void;
+}) {
+  const target = word.a.trim();
+  const parts = useMemo(() => shuffle(target.split(/\s+/).map((ch, i) => ({ ch, i }))), [target]);
+  const [built, setBuilt] = useState<{ ch: string; i: number }[]>([]);
+
+  useEffect(() => {
+    setBuilt([]);
+  }, [target]);
+
+  const used = new Set(built.map((b) => b.i));
+  const done = !!picked;
+
+  const check = () => {
+    if (done) return;
+    const attempt = built.map((b) => b.ch).join(" ");
+    onPick(attempt === target ? word : WRONG);
+  };
+
+  const chip = (bg: string): CSSProperties => ({
+    padding: "10px 16px",
+    borderRadius: 18,
+    border: `3px solid ${INK}`,
+    background: bg,
+    boxShadow: `0 4px 0 ${INK}`,
+    fontSize: 26,
+    fontWeight: 700,
+    color: INK,
+    cursor: done ? "default" : "pointer",
+    fontFamily: "'Noto Naskh Arabic', serif",
+    lineHeight: 1.6,
+  });
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center" }}>
+      <div
+        dir="rtl"
+        style={{
+          display: "flex",
+          gap: 8,
+          flexWrap: "wrap",
+          justifyContent: "center",
+          minHeight: 66,
+          width: "100%",
+          padding: "8px 10px",
+          borderRadius: 20,
+          border: "3px dashed #E0CDB4",
+          background: "#FFFBF4",
+          alignItems: "center",
+        }}
+      >
+        {built.length === 0 && (
+          <span style={{ fontSize: 15, fontWeight: 700, color: "#B6A695", fontFamily: "Lora, serif" }}>
+            Tap the Arabic words in order
+          </span>
+        )}
+        {built.map((b, n) => (
+          <button key={`${b.i}-${n}`} onClick={() => !done && setBuilt((cur) => cur.filter((_, k) => k !== n))} style={chip("#FFE3A8")}>
+            {b.ch}
+          </button>
+        ))}
+      </div>
+
+      <div dir="rtl" style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+        {parts.map((p) => (
+          <button
+            key={p.i}
+            disabled={used.has(p.i) || done}
+            onClick={() => setBuilt((cur) => cur.concat([p]))}
+            style={{ ...chip("#FFFFFF"), opacity: used.has(p.i) ? 0.3 : 1 }}
+          >
+            {p.ch}
+          </button>
+        ))}
+      </div>
+
+      {!done && (
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+          <button onClick={() => setBuilt([])} style={{ ...pill("#FFFFFF", INK), padding: "12px 22px", fontSize: 15 }}>
+            Clear
+          </button>
+          <button
+            onClick={check}
+            disabled={!built.length}
+            style={{ ...pill(INK, "#FFF6EC", "#A08E7C"), padding: "12px 26px", fontSize: 16, opacity: built.length ? 1 : 0.5 }}
+          >
+            Check it
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SpellBoard({
   word,
   picked,
