@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import heroPicture from "@/assets/kalimati-hero.jpg";
 import {
   ALL,
   DAY_FILLS,
