@@ -557,9 +557,11 @@ export default function KalimatiApp() {
         backgroundColor: "#FFF6EC",
         backgroundImage: "radial-gradient(#F3E2CE 1.5px, transparent 1.6px)",
         backgroundSize: "26px 26px",
+        position: "relative",
       }}
     >
-      <div style={{ width: "100%", maxWidth: 960, display: "flex", flexDirection: "column", gap: 24 }}>
+      <FloatingDecor />
+      <div style={{ width: "100%", maxWidth: 960, display: "flex", flexDirection: "column", gap: 24, position: "relative", zIndex: 1 }}>
         {/* header */}
         <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
