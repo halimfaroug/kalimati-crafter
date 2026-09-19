@@ -1,0 +1,32 @@
+{
+  "name": "Kalimati — My Words",
+  "short_name": "Kalimati",
+  "description": "English–Arabic word practice for young readers. 20+ picture word books, flashcards, spoken words, games and streaks.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fefce8",
+  "theme_color": "#f59e0b",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/pwa-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
