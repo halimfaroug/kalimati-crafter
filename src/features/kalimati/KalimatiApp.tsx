@@ -615,6 +615,22 @@ export default function KalimatiApp() {
         {screen === "home" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 22, animation: "popIn 0.35s ease-out" }}>
             <section style={{ ...card("#FFFFFF"), padding: 26, display: "flex", gap: 26, alignItems: "center", flexWrap: "wrap" }}>
+              <img
+                src={heroPicture}
+                alt="Two children reading together with balloons and roses"
+                width={1024}
+                height={768}
+                style={{
+                  flex: "1 1 260px",
+                  width: "100%",
+                  maxWidth: 340,
+                  height: "auto",
+                  borderRadius: 24,
+                  border: `3px solid ${INK}`,
+                  boxShadow: `0 6px 0 ${INK}`,
+                  objectFit: "cover",
+                }}
+              />
               <div style={{ flex: "1 1 300px", minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
                 <div style={{ fontFamily: "Lora, serif", fontSize: 30, fontWeight: 600, lineHeight: 1.15 }}>
                   Sit together and pick a little book.
