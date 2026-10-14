@@ -10,3 +10,5 @@
 <!-- LOVABLE:END -->
 
 - Keep learning celebrations in a lightweight decorative component with finite CSS transform/opacity animations and a reduced-motion override, so feedback stays accessible without animation libraries.
+- Define number learning data in a typed module with type-only deck imports; reuse word identities and the existing practice/progress flow so numbers share pronunciation, rewards and saved learning history.
+- Keep the counting scene separate from answer choices and bound object counts; this avoids revealing the answer and keeps touch targets and rendering predictable.
