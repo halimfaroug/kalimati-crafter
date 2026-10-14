@@ -160,3 +160,49 @@
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
 }
+
+/* Finite learning motion: transform and opacity only, no animation library. */
+@keyframes kAnswerPop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.08) rotate(-3deg); }
+  75% { transform: scale(0.98); }
+  100% { transform: scale(1); }
+}
+@keyframes kQuestionEnter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes kGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes kCelebrate {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.5); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--burst-x), var(--burst-y)) scale(1) rotate(var(--burst-turn)); }
+}
+.k-answer-pop, .k-step-pop { animation: kAnswerPop 450ms ease-out; }
+.k-streak-pop { animation: kAnswerPop 600ms ease-out; }
+.k-value-pop { animation: kQuestionEnter 350ms ease-out; }
+.k-question-enter { animation: kQuestionEnter 300ms ease-out; }
+.k-week-grow { transform-origin: bottom; animation: kGrow 550ms ease-out; }
+.k-progress-fill { width: 100%; transform-origin: left; transition: transform 450ms ease-out; }
+.k-completed { position: relative; }
+.k-celebration { position: absolute; inset: 0; pointer-events: none; contain: layout style; }
+.k-celebration span {
+  position: absolute; left: 50%; top: 50%; font-size: 24px; opacity: 0;
+  animation: kCelebrate 850ms ease-out forwards;
+  --burst-x: -72px; --burst-y: -64px; --burst-turn: -15deg;
+}
+.k-celebration span:nth-child(2) { --burst-x: 65px; --burst-y: -70px; --burst-turn: 12deg; animation-delay: 50ms; }
+.k-celebration span:nth-child(3) { --burst-x: -75px; --burst-y: 25px; --burst-turn: -10deg; animation-delay: 90ms; }
+.k-celebration span:nth-child(4) { --burst-x: 70px; --burst-y: 35px; --burst-turn: 20deg; animation-delay: 30ms; }
+.k-celebration span:nth-child(5) { --burst-x: 0px; --burst-y: -85px; --burst-turn: 10deg; animation-delay: 70ms; }
+.k-celebration span:nth-child(6) { --burst-x: -15px; --burst-y: 65px; --burst-turn: -12deg; animation-delay: 120ms; }
+.k-celebration-complete span { top: 25%; font-size: 30px; animation-duration: 1200ms; }
+.kalimati-motion :focus-visible { outline: 3px solid var(--foreground); outline-offset: 4px; }
+@media (prefers-reduced-motion: reduce) {
+  .kalimati-motion *, .kalimati-motion *::before, .kalimati-motion *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .kalimati-motion .k-press:hover, .kalimati-motion .k-press:active { transform: none; }
+  .k-celebration { display: none; }
+}

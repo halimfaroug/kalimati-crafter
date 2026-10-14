@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import heroPicture from "@/assets/kalimati-hero.jpg";
+import { Celebration } from "./Celebration";
 import {
   ALL,
   DAY_FILLS,
@@ -188,7 +189,7 @@ function FloatingDecor() {
             left: d.left,
             fontSize: d.size,
             opacity: 0.55,
-            animation: `floaty ${d.dur}s ease-in-out ${i * 0.4}s infinite`,
+            animation: `floaty 3s ease-in-out ${i * 0.12}s 1`,
           }}
         >
           {d.e}
@@ -214,7 +215,7 @@ function Mascot({ mood }: { mood: "happy" | "oops" | "waiting" }) {
     alignItems: "center",
     justifyContent: "center",
     gap: 9,
-    animation: mood === "happy" ? "hop 0.7s ease-out" : mood === "oops" ? "wiggle 0.5s ease-in-out 2" : "floaty 5s ease-in-out infinite",
+    animation: mood === "happy" ? "hop 0.7s ease-out" : mood === "oops" ? "wiggle 0.5s ease-in-out 2" : "floaty 3s ease-in-out 1",
   };
   const eye: CSSProperties = {
     width: 11,
@@ -250,6 +251,7 @@ export default function KalimatiApp() {
   const [idx, setIdx] = useState(0);
   const [picked, setPicked] = useState<Word | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
+  const [answerRun, setAnswerRun] = useState(0);
   const [missed, setMissed] = useState<Word[]>([]);
   const [earned, setEarned] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -364,6 +366,7 @@ export default function KalimatiApp() {
     setIdx(0);
     setPicked(null);
     setCorrectCount(0);
+    setAnswerRun(0);
     setMissed([]);
     setEarned(null);
     setScreen("practice");
@@ -377,6 +380,7 @@ export default function KalimatiApp() {
     chime(right);
     setTimeout(() => say(q.word, true), right ? 340 : 420);
     setPicked(opt);
+    setAnswerRun((run) => right ? run + 1 : 0);
     if (right) setCorrectCount((c) => c + 1);
     else setMissed((m) => m.concat([q.word]));
     setProgress((p) => ({
@@ -546,6 +550,7 @@ export default function KalimatiApp() {
 
   return (
     <div
+      className="kalimati-motion"
       style={{
         minHeight: "100vh",
         fontFamily: "Nunito, system-ui, sans-serif",
@@ -580,7 +585,7 @@ export default function KalimatiApp() {
                 fontSize: 24,
                 fontWeight: 700,
                 boxShadow: `0 4px 0 ${INK}`,
-                animation: "floaty 5s ease-in-out infinite",
+                animation: "floaty 3s ease-in-out 1",
               }}
             >
               كَ
@@ -595,6 +600,8 @@ export default function KalimatiApp() {
             </div>
           </div>
           <div
+            key={progress.lastDay}
+            className={screen === "done" ? "k-streak-pop" : undefined}
             style={{
               display: "flex",
               alignItems: "center",
@@ -669,7 +676,7 @@ export default function KalimatiApp() {
                 { v: favWords.length, label: "Starred", fill: "#FFD9C9", color: "#8C5540" },
               ].map((s) => (
                 <div key={s.label} style={{ ...card(s.fill, 24), padding: "18px 20px", boxShadow: `0 5px 0 ${INK}` }}>
-                  <div style={{ fontFamily: "Lora, serif", fontSize: 38, fontWeight: 600, lineHeight: 1 }}>{s.v}</div>
+                  <div key={String(s.v)} className="k-value-pop" style={{ fontFamily: "Lora, serif", fontSize: 38, fontWeight: 600, lineHeight: 1 }}>{s.v}</div>
                   <div
                     style={{
                       fontSize: 13,
@@ -789,6 +796,7 @@ export default function KalimatiApp() {
                   <div key={i} style={{ flex: "1 1 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, minWidth: 0 }}>
                     <div style={{ fontSize: 12, fontWeight: 800, color: "#9A8A7B" }}>{progress.week[i] || ""}</div>
                     <div
+                      className="k-week-grow"
                       style={{
                         width: "100%",
                         border: `3px solid ${INK}`,
@@ -956,7 +964,7 @@ export default function KalimatiApp() {
                       </div>
                       <div>
                         <div style={{ height: 14, border: `3px solid ${INK}`, borderRadius: 999, background: "#FFFFFF", overflow: "hidden" }}>
-                          <div style={{ height: "100%", background: INK, width: `${d.pct}%` }} />
+                          <div className="k-progress-fill" style={{ height: "100%", background: INK, transform: `scaleX(${d.pct / 100})` }} />
                         </div>
                         <div style={{ fontSize: 13, fontWeight: 800, marginTop: 7, color: "#6E6055" }}>{d.progressLabel}</div>
                       </div>
@@ -1133,6 +1141,7 @@ export default function KalimatiApp() {
             q={q}
             idx={idx}
             total={total}
+            answerRun={answerRun}
             picked={picked}
             deckName={deckId === "fav" ? "My starred words" : DECKS.find((d) => d.id === deckId)?.title || ""}
             fav={!!progress.fav[q.word.e]}
@@ -1150,7 +1159,8 @@ export default function KalimatiApp() {
         {/* ---------- done ---------- */}
         {screen === "done" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 20, animation: "popIn 0.35s ease-out" }}>
-            <section style={{ ...card("#FFE3A8", 32), padding: "34px 26px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+            <section className="k-completed" style={{ ...card("#FFE3A8", 32), padding: "34px 26px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+              <Celebration completed />
               <div style={{ fontSize: 44, letterSpacing: 8, animation: "bounceIn 0.5s ease-out" }}>
                 {"★".repeat(Math.max(1, Math.round((correctCount / total) * 3)))}
               </div>
@@ -1168,7 +1178,7 @@ export default function KalimatiApp() {
                     animation: "bounceIn 0.5s ease-out 0.2s backwards",
                   }}
                 >
-                  <div style={{ fontSize: 40, lineHeight: 1, animation: "sparkle 1.4s ease-in-out infinite" }}>{earned}</div>
+                  <div style={{ fontSize: 40, lineHeight: 1, animation: "sparkle 1.4s ease-in-out 2" }}>{earned}</div>
                   <div style={{ fontSize: 16, fontWeight: 800, textAlign: "left" }}>A new sticker for your book!</div>
                 </div>
               )}
@@ -1439,6 +1449,7 @@ function PracticeScreen({
   q,
   idx,
   total,
+  answerRun,
   picked,
   deckName,
   fav,
@@ -1451,6 +1462,7 @@ function PracticeScreen({
   q: Question;
   idx: number;
   total: number;
+  answerRun: number;
   picked: Word | null;
   deckName: string;
   fav: boolean;
@@ -1468,6 +1480,11 @@ function PracticeScreen({
   const spellMode = mode === "spell";
   const sentenceMode = mode === "sentence";
   const pic = picFor(w);
+  const questionFocus = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (idx > 0) questionFocus.current?.focus({ preventScroll: true });
+  }, [idx]);
 
   useEffect(() => {
     if (mode === "listen") {
@@ -1517,6 +1534,9 @@ function PracticeScreen({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {picked ? `${right ? "Correct!" : "Good try."} ${idx + 1} of ${total} answered.${right && answerRun >= 2 ? ` ${answerRun} correct in a row!` : ""}` : ""}
+      </div>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <button
           aria-label="Quit practice"
@@ -1532,6 +1552,8 @@ function PracticeScreen({
             return (
               <div
                 key={i}
+                aria-hidden="true"
+                className={i === idx && picked ? "k-step-pop" : undefined}
                 style={{
                   flex: "1 1 18px",
                   minWidth: 18,
@@ -1546,7 +1568,7 @@ function PracticeScreen({
                   border: `3px solid ${doneStep || current ? INK : "#E0CDB4"}`,
                   background: doneStep ? "#FFE3A8" : current ? "#FFFFFF" : "#FFFBF4",
                   boxShadow: doneStep || current ? `0 3px 0 ${INK}` : "none",
-                  animation: current ? "sparkle 1.6s ease-in-out infinite" : "none",
+                  animation: current ? "sparkle 1s ease-in-out 2" : undefined,
                 }}
               >
                 {doneStep ? "★" : ""}
@@ -1557,40 +1579,18 @@ function PracticeScreen({
         <div style={{ flex: "0 0 auto", fontSize: 15, fontWeight: 800, color: "#7C6E60" }}>{idx + 1} / {total}</div>
       </div>
 
-      <section style={{ ...card("#FFFFFF", 32), padding: "30px 26px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+      <section key={`${idx}-${w.e}`} className="k-question-enter" style={{ ...card("#FFFFFF", 32), padding: "30px 26px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+        <div ref={questionFocus} tabIndex={-1} className="sr-only">Question {idx + 1} of {total}: {taskLabel}. {mode === "listen" ? "Listen and choose." : w.e}</div>
         <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "#9A8A7B" }}>
           {deckName} · {taskLabel}
         </div>
 
         {mode === "listen" ? (
-          <div style={{ ...picStyle({ kind: "emoji", value: "🎧" }, "lg"), background: "#E6EEFB" }}>🎧</div>
+          <div className={right ? "k-answer-pop" : undefined} style={{ position: "relative", ...picStyle({ kind: "emoji", value: "🎧" }, "lg"), background: "#E6EEFB", overflow: "visible" }}>🎧{right && <Celebration />}</div>
         ) : (
           <div style={{ position: "relative" }}>
-            <div style={picStyle(pic, "lg")}>{picText(pic)}</div>
-            {picked && right && (
-              <div style={{ position: "absolute", inset: 0, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                {[
-                  { s: 26, x: "-74px", y: "-58px", d: "0s", c: "⭐" },
-                  { s: 22, x: "76px", y: "-50px", d: "0.04s", c: "✨" },
-                  { s: 24, x: "-84px", y: "40px", d: "0.08s", c: "🎉" },
-                  { s: 20, x: "82px", y: "46px", d: "0.02s", c: "⭐" },
-                  { s: 22, x: "0px", y: "-86px", d: "0.06s", c: "✨" },
-                ].map((b, i) => (
-                  <span
-                    key={i}
-                    style={{
-                      position: "absolute",
-                      fontSize: b.s,
-                      ["--bx" as string]: b.x,
-                      ["--by" as string]: b.y,
-                      animation: `burst 0.75s ease-out ${b.d} forwards`,
-                    }}
-                  >
-                    {b.c}
-                  </span>
-                ))}
-              </div>
-            )}
+            <div className={right ? "k-answer-pop" : undefined} style={picStyle(pic, "lg")}>{picText(pic)}</div>
+            {right && <Celebration />}
           </div>
         )}
 
@@ -1680,6 +1680,7 @@ function PracticeScreen({
         >
           <Mascot mood={right ? "happy" : "oops"} />
           <div style={{ flex: "1 1 240px", minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+            {right && answerRun >= 2 && <div key={answerRun} className="k-streak-pop" style={{ fontWeight: 800 }}>🔥 {answerRun} correct in a row!</div>}
             <div style={{ fontFamily: "Lora, serif", fontSize: 22, fontWeight: 600 }}>
               {right ? PRAISE[idx % PRAISE.length] : KIND[idx % KIND.length]}
             </div>
