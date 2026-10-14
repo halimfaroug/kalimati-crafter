@@ -1,7 +1,7 @@
 {
-  "name": "Kalimati — My Words",
-  "short_name": "Kalimati",
-  "description": "English–Arabic word practice for young readers. 20+ picture word books, flashcards, spoken words, games and streaks.",
+  "name": "Kalimati wa Arghami — My Words and My Numbers",
+  "short_name": "Kalimati wa Arghami",
+  "description": "Playful English–Arabic words and numbers, counting games, spoken words, picture books and streaks.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#fefce8",

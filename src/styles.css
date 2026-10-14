@@ -185,6 +185,26 @@
 .k-week-grow { transform-origin: bottom; animation: kGrow 550ms ease-out; }
 .k-progress-fill { width: 100%; transform-origin: left; transition: transform 450ms ease-out; }
 .k-completed { position: relative; }
+.kalimati-motion {
+  --learning-ink: oklch(0.325 0.02 60);
+  --learning-surface: oklch(1 0 0);
+  --learning-mint: oklch(0.94 0.035 160);
+  --learning-coral: oklch(0.62 0.17 35);
+  --learning-counted: oklch(0.84 0.09 160);
+}
+.k-brand-meaning { margin-top: 4px; font-size: 15px; font-weight: 800; }
+.k-number-invitation { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 18px 0; border-block: 2px dashed var(--learning-ink); color: var(--learning-ink); }
+.k-number-invitation p { margin-top: 6px; font-size: 18px; font-weight: 700; }
+.k-number-start { min-height: 48px; font-size: 17px; background: var(--learning-coral); color: var(--learning-surface); border: 2px solid var(--learning-ink); }
+.k-number-start:hover { background: var(--learning-ink); }
+.k-count-wrapper { position: relative; width: 100%; }
+.k-count-scene { color: var(--learning-ink); width: 100%; }
+.k-count-objects { display: grid; grid-template-columns: repeat(auto-fit, 56px); justify-content: center; gap: 10px; max-width: 460px; margin: 18px auto; min-height: 66px; }
+.k-count-object { width: 56px; height: 66px; position: relative; padding: 0; font-size: 34px; border: 2px solid transparent; background: var(--learning-mint); border-radius: 8px; }
+.k-count-object:hover { background: var(--learning-counted); }
+.k-count-object.is-counted { border-color: var(--learning-ink); background: var(--learning-counted); animation: kAnswerPop 350ms ease-out; }
+.k-count-object:disabled { opacity: 1; }
+.k-count-marker { position: absolute; inset-inline-end: -4px; top: -6px; width: 24px; height: 24px; font-size: 14px; border-radius: 50%; background: var(--learning-ink); color: var(--learning-surface); display: grid; place-items: center; }
 .k-celebration { position: absolute; inset: 0; pointer-events: none; contain: layout style; }
 .k-celebration span {
   position: absolute; left: 50%; top: 50%; font-size: 24px; opacity: 0;

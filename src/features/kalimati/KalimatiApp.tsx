@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import heroPicture from "@/assets/kalimati-hero.jpg";
 import { Celebration } from "./Celebration";
+import { CountingScene } from "./CountingScene";
+import { NUMBER_WORDS, arabicDigits, numberValue } from "@/data/numbers";
+import { Button } from "@/components/ui/button";
 import {
   ALL,
   DAY_FILLS,
@@ -48,12 +51,13 @@ const KIND = [
 const SESSION_LENGTH = 6;
 const INK = "#3B322B";
 
-type QMode = "arabic" | "meaning" | "reverse" | "listen" | "spell" | "sentence";
+type QMode = "arabic" | "meaning" | "reverse" | "listen" | "spell" | "sentence" | "count";
 type Question = { word: Word; mode: QMode; options: Word[] };
-type GameMode = "mix" | "arabic" | "meaning" | "reverse" | "listen" | "spell" | "sentence";
+type GameMode = "mix" | QMode;
 type Flags = Record<string, boolean>;
 
 const GAME_MODES: { id: GameMode; label: string; icon: string; blurb: string }[] = [
+  { id: "count", label: "Count the balloons", icon: "🎈", blurb: "numbers from zero to twenty" },
   { id: "mix", label: "Mixed play", icon: "🎲", blurb: "a little of everything" },
   { id: "arabic", label: "Say it in Arabic", icon: "🔤", blurb: "English word → Arabic" },
   { id: "reverse", label: "Read the Arabic", icon: "🔁", blurb: "Arabic → English" },
@@ -245,7 +249,7 @@ function Mascot({ mood }: { mood: "happy" | "oops" | "waiting" }) {
 
 export default function KalimatiApp() {
   const [screen, setScreen] = useState<"home" | "practice" | "done" | "record">("home");
-  const [tab, setTab] = useState<"english" | "science" | "arabic">("english");
+  const [tab, setTab] = useState<"english" | "science" | "arabic" | "numbers">("english");
   const [deckId, setDeckId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [idx, setIdx] = useState(0);
@@ -325,6 +329,10 @@ export default function KalimatiApp() {
 
   /* session building */
   const start = (id: string, requested: GameMode = gameMode) => {
+    if (requested === "count") {
+      const deck = DECKS.find((d) => d.id === id);
+      if (!deck?.words.some((w) => (numberValue(w) ?? 100) <= 20)) id = "counting-start";
+    }
     const len = SESSION_LENGTH;
     let pool: Word[];
     let distractorPool: Word[];
@@ -344,12 +352,17 @@ export default function KalimatiApp() {
       const multi = pool.filter((w) => arabicTokens(w).length >= 2);
       if (multi.length >= 2) pool = multi;
     }
+    if (requested === "count") {
+      pool = pool.filter((w) => numberValue(w) !== undefined && (numberValue(w) ?? 100) <= 20);
+      distractorPool = NUMBER_WORDS.filter((w) => (w.numberValue ?? 100) <= 20);
+    }
     if (!pool.length) return;
     const MIX: QMode[] = ["arabic", "reverse", "meaning", "listen", "spell", "sentence"];
     const qs: Question[] = shuffle(pool)
       .slice(0, len)
       .map((w, i) => {
-        let mode: QMode = requested === "mix" ? MIX[i % MIX.length]! : (requested as QMode);
+        let mode: QMode = requested === "mix" ? MIX[i % MIX.length] ?? "arabic" : requested;
+        if (requested === "mix" && numberValue(w) !== undefined && (numberValue(w) ?? 100) <= 20 && i % 2 === 0) mode = "count";
         if (mode === "sentence" && arabicTokens(w).length < 2) mode = w.a ? "arabic" : "meaning";
         if (!w.a && (mode === "arabic" || mode === "reverse")) mode = "meaning";
         if (!w.a && mode === "listen") mode = "listen";
@@ -569,7 +582,7 @@ export default function KalimatiApp() {
       <div style={{ width: "100%", maxWidth: 960, display: "flex", flexDirection: "column", gap: 24, position: "relative", zIndex: 1 }}>
         {/* header */}
         <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0, maxWidth: "100%" }}>
             <div
               dir="rtl"
               style={{
@@ -590,10 +603,11 @@ export default function KalimatiApp() {
             >
               كَ
             </div>
-            <div>
+            <div style={{ minWidth: 0 }}>
               <h1 style={{ fontFamily: "Lora, serif", fontSize: 26, fontWeight: 600, lineHeight: 1.1 }}>
-                Kalimati — my words
+                Kalimati wa Arghami
               </h1>
+              <div className="k-brand-meaning">My words and my numbers</div>
               <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", marginTop: 3 }}>
                 Built by: Halim Faroug A. Elhag
               </div>
@@ -621,6 +635,10 @@ export default function KalimatiApp() {
         {/* ---------- home ---------- */}
         {screen === "home" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 22, animation: "popIn 0.35s ease-out" }}>
+            <section className="k-number-invitation">
+              <div><h2 className="text-xl font-extrabold">My numbers <span lang="ar" dir="rtl">أَرْقامي</span></h2><p>٠ ١ ٢ ٣ ٤ ٥ ٦ ٧ ٨ ٩ · 0–100</p></div>
+              <Button className="k-number-start" onClick={() => { setTab("numbers"); setGameMode("count"); start("counting-start", "count"); }}>🎈 Let’s count</Button>
+            </section>
             <section style={{ ...card("#FFFFFF"), padding: 26, display: "flex", gap: 26, alignItems: "center", flexWrap: "wrap" }}>
               <img
                 src={heroPicture}
@@ -858,6 +876,7 @@ export default function KalimatiApp() {
                     ["english", "English book"],
                     ["science", "Science book"],
                     ["arabic", "Arabic book"],
+                    ["numbers", "My numbers"],
                   ] as const
                 ).map(([id, label]) => {
                   const on = tab === id;
@@ -901,7 +920,7 @@ export default function KalimatiApp() {
                         title: d.title,
                         glyph: d.glyph,
                         fill: d.fill,
-                        icon: DECK_ICONS[d.id] || "📘",
+                        icon: DECK_ICONS[d.id] || (d.shelf === "numbers" ? "🔢" : "📘"),
                         sub: `${d.words.length} words`,
                         pct: Math.round((done / d.words.length) * 100),
                         progressLabel: `${done} of ${d.words.length} known`,
@@ -1475,6 +1494,7 @@ function PracticeScreen({
   const w = q.word;
   const right = !!picked && picked.e === w.e;
   const mode = q.mode;
+  const countMode = mode === "count";
   const arabicOptions = mode === "arabic";
   const englishOptions = mode === "reverse" || mode === "listen";
   const spellMode = mode === "spell";
@@ -1496,7 +1516,7 @@ function PracticeScreen({
   }, [w.e, mode]);
 
   const taskLabel =
-    mode === "arabic"
+    countMode ? "count and choose the number" : mode === "arabic"
       ? "how do you say it in Arabic"
       : mode === "reverse"
         ? "read the Arabic — which word is it"
@@ -1580,12 +1600,14 @@ function PracticeScreen({
       </div>
 
       <section key={`${idx}-${w.e}`} className="k-question-enter" style={{ ...card("#FFFFFF", 32), padding: "30px 26px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-        <div ref={questionFocus} tabIndex={-1} className="sr-only">Question {idx + 1} of {total}: {taskLabel}. {mode === "listen" ? "Listen and choose." : w.e}</div>
+        <div ref={questionFocus} tabIndex={-1} className="sr-only">Question {idx + 1} of {total}: {taskLabel}. {countMode ? "How many balloons?" : mode === "listen" ? "Listen and choose." : w.e}</div>
         <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "#9A8A7B" }}>
           {deckName} · {taskLabel}
         </div>
 
-        {mode === "listen" ? (
+        {countMode ? (
+          <div className="k-count-wrapper"><CountingScene value={numberValue(w) ?? 0} answered={!!picked} />{right && <Celebration />}</div>
+        ) : mode === "listen" ? (
           <div className={right ? "k-answer-pop" : undefined} style={{ position: "relative", ...picStyle({ kind: "emoji", value: "🎧" }, "lg"), background: "#E6EEFB", overflow: "visible" }}>🎧{right && <Celebration />}</div>
         ) : (
           <div style={{ position: "relative" }}>
@@ -1594,7 +1616,9 @@ function PracticeScreen({
           </div>
         )}
 
-        {mode === "reverse" ? (
+        {countMode ? (
+          picked && <div className="text-2xl font-extrabold">{numberValue(w)} · <span lang="ar" dir="rtl">{w.a}</span> · {w.e}</div>
+        ) : mode === "reverse" ? (
           <>
             <div dir="rtl" style={{ fontFamily: "'Noto Naskh Arabic', serif", fontSize: 46, fontWeight: 700, lineHeight: 1.5 }}>{w.a}</div>
             <div style={{ fontSize: 17, fontWeight: 700, fontStyle: "italic", color: "#7C6E60" }}>{w.t}</div>
@@ -1610,7 +1634,7 @@ function PracticeScreen({
         )}
 
         <div style={{ fontSize: 17, color: "#6E6055", fontWeight: 600, maxWidth: 520 }}>
-          {mode === "arabic"
+          {countMode ? "كَمْ؟" : mode === "arabic"
             ? w.m
             : mode === "reverse"
               ? "Say the Arabic out loud, then pick the English word."
@@ -1623,19 +1647,19 @@ function PracticeScreen({
                     : "Read it together, then pick what it means."}
         </div>
 
-        <button
+        {(!countMode || picked) && <button
           className="k-press"
-          onClick={() => onSay(w, mode === "reverse")}
+          onClick={() => onSay(w, countMode || mode === "reverse")}
           style={{ ...pill("#E6EEFB", INK), padding: "11px 20px", fontSize: 15, minHeight: 44, marginTop: 2 }}
         >
-          {mode === "listen"
+          {countMode ? "Hear the number" : mode === "listen"
             ? "👂 Hear it again"
             : mode === "reverse"
               ? "Hear the Arabic"
               : sentenceMode
                 ? "Hear it in English"
                 : "Hear the English word"}
-        </button>
+        </button>}
       </section>
 
       {spellMode ? (
@@ -1645,7 +1669,8 @@ function PracticeScreen({
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 14 }}>
           {q.options.map((o) => (
-            <button key={o.e} onClick={() => onPick(o)} style={optionStyle(o)}>
+            <Button variant="ghost" className="h-auto whitespace-normal" key={o.e} disabled={!!picked} onClick={() => onPick(o)} style={optionStyle(o)}>
+              {countMode && <div className="text-3xl font-extrabold">{numberValue(o)} · {arabicDigits(numberValue(o) ?? 0)}</div>}
               {englishOptions && <div style={{ fontSize: 30, lineHeight: 1 }}>{picText(picFor(o))}</div>}
               <div
                 dir={arabicOptions ? "rtl" : "ltr"}
@@ -1657,10 +1682,10 @@ function PracticeScreen({
                       : { fontSize: 16, fontWeight: 700, lineHeight: 1.4 }
                 }
               >
-                {arabicOptions ? o.a : englishOptions ? o.e : o.m}
+                {countMode ? o.a : arabicOptions ? o.a : englishOptions ? o.e : o.m}
               </div>
-              {arabicOptions && <div style={{ fontSize: 15, fontWeight: 700, fontStyle: "italic", color: "#7C6E60" }}>{o.t}</div>}
-            </button>
+              {(arabicOptions || countMode) && <div style={{ fontSize: 15, fontWeight: 700, fontStyle: "italic", color: "#7C6E60" }}>{o.t}</div>}
+            </Button>
           ))}
         </div>
       )}
