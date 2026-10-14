@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep learning celebrations in a lightweight decorative component with finite CSS transform/opacity animations and a reduced-motion override, so feedback stays accessible without animation libraries.
