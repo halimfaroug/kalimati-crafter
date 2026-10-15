@@ -1,6 +1,4 @@
-import { NUMBER_DECKS, numberValue } from "./numbers";
-
-export type Word = { e: string; a: string; t: string; m: string; numberValue?: number };
+export type Word = { e: string; a: string; t: string; m: string };
 export type Deck = { id: string; shelf: string; unit: string; title: string; glyph: string; fill: string; words: Word[] };
 export type Pic = { kind: "swatch" | "num" | "emoji" | "letter"; value: string };
 
@@ -75,8 +73,6 @@ export const PRAISE = ['Yes! You got it!', 'Brilliant!', 'Perfect — well done!
 export const KIND = ['Nearly! Here it is.', 'Good try — look again.', 'Almost! This is the one.', 'Not quite — now you know it.', 'Close one! Here it is.'];
 
 export function picFor(word: Word): Pic {
-  const value = numberValue(word);
-  if (value !== undefined) return { kind: 'num', value: String(value) };
   const swatch = SWATCH[word.e];
   if (swatch) return { kind: 'swatch', value: swatch };
   const num = NUMS[word.e];
@@ -88,7 +84,6 @@ export function picFor(word: Word): Pic {
 
 
 export const DECKS: Deck[] = [
-  ...NUMBER_DECKS,
   { id: 'colours', shelf: 'english', unit: 'Picture dictionary 8', title: 'Colours', glyph: 'أَلْوان', fill: '#DFF3EA', words: [
     W('red', 'أَحْمَر', 'ahmar', 'the colour of a tomato'),
     W('yellow', 'أَصْفَر', 'asfar', 'the colour of a lemon'),
