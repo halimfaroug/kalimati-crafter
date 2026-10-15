@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import heroPicture from "@/assets/kalimati-hero.jpg";
-import { Celebration } from "./Celebration";
-import { CountingScene } from "./CountingScene";
-import { NUMBER_WORDS, arabicDigits, numberValue } from "@/data/numbers";
-import { Button } from "@/components/ui/button";
 import {
   ALL,
   DAY_FILLS,
@@ -51,13 +47,12 @@ const KIND = [
 const SESSION_LENGTH = 6;
 const INK = "#3B322B";
 
-type QMode = "arabic" | "meaning" | "reverse" | "listen" | "spell" | "sentence" | "count";
+type QMode = "arabic" | "meaning" | "reverse" | "listen" | "spell" | "sentence";
 type Question = { word: Word; mode: QMode; options: Word[] };
-type GameMode = "mix" | QMode;
+type GameMode = "mix" | "arabic" | "meaning" | "reverse" | "listen" | "spell" | "sentence";
 type Flags = Record<string, boolean>;
 
 const GAME_MODES: { id: GameMode; label: string; icon: string; blurb: string }[] = [
-  { id: "count", label: "Count the balloons", icon: "🎈", blurb: "numbers from zero to twenty" },
   { id: "mix", label: "Mixed play", icon: "🎲", blurb: "a little of everything" },
   { id: "arabic", label: "Say it in Arabic", icon: "🔤", blurb: "English word → Arabic" },
   { id: "reverse", label: "Read the Arabic", icon: "🔁", blurb: "Arabic → English" },
@@ -193,7 +188,7 @@ function FloatingDecor() {
             left: d.left,
             fontSize: d.size,
             opacity: 0.55,
-            animation: `floaty 3s ease-in-out ${i * 0.12}s 1`,
+            animation: `floaty ${d.dur}s ease-in-out ${i * 0.4}s infinite`,
           }}
         >
           {d.e}
@@ -219,7 +214,7 @@ function Mascot({ mood }: { mood: "happy" | "oops" | "waiting" }) {
     alignItems: "center",
     justifyContent: "center",
     gap: 9,
-    animation: mood === "happy" ? "hop 0.7s ease-out" : mood === "oops" ? "wiggle 0.5s ease-in-out 2" : "floaty 3s ease-in-out 1",
+    animation: mood === "happy" ? "hop 0.7s ease-out" : mood === "oops" ? "wiggle 0.5s ease-in-out 2" : "floaty 5s ease-in-out infinite",
   };
   const eye: CSSProperties = {
     width: 11,
@@ -249,13 +244,12 @@ function Mascot({ mood }: { mood: "happy" | "oops" | "waiting" }) {
 
 export default function KalimatiApp() {
   const [screen, setScreen] = useState<"home" | "practice" | "done" | "record">("home");
-  const [tab, setTab] = useState<"english" | "science" | "arabic" | "numbers">("english");
+  const [tab, setTab] = useState<"english" | "science" | "arabic">("english");
   const [deckId, setDeckId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [idx, setIdx] = useState(0);
   const [picked, setPicked] = useState<Word | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
-  const [answerRun, setAnswerRun] = useState(0);
   const [missed, setMissed] = useState<Word[]>([]);
   const [earned, setEarned] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -329,10 +323,6 @@ export default function KalimatiApp() {
 
   /* session building */
   const start = (id: string, requested: GameMode = gameMode) => {
-    if (requested === "count") {
-      const deck = DECKS.find((d) => d.id === id);
-      if (!deck?.words.some((w) => (numberValue(w) ?? 100) <= 20)) id = "counting-start";
-    }
     const len = SESSION_LENGTH;
     let pool: Word[];
     let distractorPool: Word[];
@@ -352,17 +342,12 @@ export default function KalimatiApp() {
       const multi = pool.filter((w) => arabicTokens(w).length >= 2);
       if (multi.length >= 2) pool = multi;
     }
-    if (requested === "count") {
-      pool = pool.filter((w) => numberValue(w) !== undefined && (numberValue(w) ?? 100) <= 20);
-      distractorPool = NUMBER_WORDS.filter((w) => (w.numberValue ?? 100) <= 20);
-    }
     if (!pool.length) return;
     const MIX: QMode[] = ["arabic", "reverse", "meaning", "listen", "spell", "sentence"];
     const qs: Question[] = shuffle(pool)
       .slice(0, len)
       .map((w, i) => {
-        let mode: QMode = requested === "mix" ? MIX[i % MIX.length] ?? "arabic" : requested;
-        if (requested === "mix" && numberValue(w) !== undefined && (numberValue(w) ?? 100) <= 20 && i % 2 === 0) mode = "count";
+        let mode: QMode = requested === "mix" ? MIX[i % MIX.length]! : (requested as QMode);
         if (mode === "sentence" && arabicTokens(w).length < 2) mode = w.a ? "arabic" : "meaning";
         if (!w.a && (mode === "arabic" || mode === "reverse")) mode = "meaning";
         if (!w.a && mode === "listen") mode = "listen";
@@ -379,7 +364,6 @@ export default function KalimatiApp() {
     setIdx(0);
     setPicked(null);
     setCorrectCount(0);
-    setAnswerRun(0);
     setMissed([]);
     setEarned(null);
     setScreen("practice");
@@ -393,7 +377,6 @@ export default function KalimatiApp() {
     chime(right);
     setTimeout(() => say(q.word, true), right ? 340 : 420);
     setPicked(opt);
-    setAnswerRun((run) => right ? run + 1 : 0);
     if (right) setCorrectCount((c) => c + 1);
     else setMissed((m) => m.concat([q.word]));
     setProgress((p) => ({
@@ -563,7 +546,6 @@ export default function KalimatiApp() {
 
   return (
     <div
-      className="kalimati-motion"
       style={{
         minHeight: "100vh",
         fontFamily: "Nunito, system-ui, sans-serif",
@@ -582,7 +564,7 @@ export default function KalimatiApp() {
       <div style={{ width: "100%", maxWidth: 960, display: "flex", flexDirection: "column", gap: 24, position: "relative", zIndex: 1 }}>
         {/* header */}
         <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0, maxWidth: "100%" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div
               dir="rtl"
               style={{
@@ -598,24 +580,21 @@ export default function KalimatiApp() {
                 fontSize: 24,
                 fontWeight: 700,
                 boxShadow: `0 4px 0 ${INK}`,
-                animation: "floaty 3s ease-in-out 1",
+                animation: "floaty 5s ease-in-out infinite",
               }}
             >
               كَ
             </div>
-            <div style={{ minWidth: 0 }}>
+            <div>
               <h1 style={{ fontFamily: "Lora, serif", fontSize: 26, fontWeight: 600, lineHeight: 1.1 }}>
-                Kalimati wa Arghami
+                Kalimati — my words
               </h1>
-              <div className="k-brand-meaning">My words and my numbers</div>
               <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", marginTop: 3 }}>
                 Built by: Halim Faroug A. Elhag
               </div>
             </div>
           </div>
           <div
-            key={progress.lastDay}
-            className={screen === "done" ? "k-streak-pop" : undefined}
             style={{
               display: "flex",
               alignItems: "center",
@@ -635,10 +614,6 @@ export default function KalimatiApp() {
         {/* ---------- home ---------- */}
         {screen === "home" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 22, animation: "popIn 0.35s ease-out" }}>
-            <section className="k-number-invitation">
-              <div><h2 className="text-xl font-extrabold">My numbers <span lang="ar" dir="rtl">أَرْقامي</span></h2><p>٠ ١ ٢ ٣ ٤ ٥ ٦ ٧ ٨ ٩ · 0–100</p></div>
-              <Button className="k-number-start" onClick={() => { setTab("numbers"); setGameMode("count"); start("counting-start", "count"); }}>🎈 Let’s count</Button>
-            </section>
             <section style={{ ...card("#FFFFFF"), padding: 26, display: "flex", gap: 26, alignItems: "center", flexWrap: "wrap" }}>
               <img
                 src={heroPicture}
@@ -694,7 +669,7 @@ export default function KalimatiApp() {
                 { v: favWords.length, label: "Starred", fill: "#FFD9C9", color: "#8C5540" },
               ].map((s) => (
                 <div key={s.label} style={{ ...card(s.fill, 24), padding: "18px 20px", boxShadow: `0 5px 0 ${INK}` }}>
-                  <div key={String(s.v)} className="k-value-pop" style={{ fontFamily: "Lora, serif", fontSize: 38, fontWeight: 600, lineHeight: 1 }}>{s.v}</div>
+                  <div style={{ fontFamily: "Lora, serif", fontSize: 38, fontWeight: 600, lineHeight: 1 }}>{s.v}</div>
                   <div
                     style={{
                       fontSize: 13,
@@ -814,7 +789,6 @@ export default function KalimatiApp() {
                   <div key={i} style={{ flex: "1 1 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, minWidth: 0 }}>
                     <div style={{ fontSize: 12, fontWeight: 800, color: "#9A8A7B" }}>{progress.week[i] || ""}</div>
                     <div
-                      className="k-week-grow"
                       style={{
                         width: "100%",
                         border: `3px solid ${INK}`,
@@ -876,7 +850,6 @@ export default function KalimatiApp() {
                     ["english", "English book"],
                     ["science", "Science book"],
                     ["arabic", "Arabic book"],
-                    ["numbers", "My numbers"],
                   ] as const
                 ).map(([id, label]) => {
                   const on = tab === id;
@@ -920,7 +893,7 @@ export default function KalimatiApp() {
                         title: d.title,
                         glyph: d.glyph,
                         fill: d.fill,
-                        icon: DECK_ICONS[d.id] || (d.shelf === "numbers" ? "🔢" : "📘"),
+                        icon: DECK_ICONS[d.id] || "📘",
                         sub: `${d.words.length} words`,
                         pct: Math.round((done / d.words.length) * 100),
                         progressLabel: `${done} of ${d.words.length} known`,
@@ -983,7 +956,7 @@ export default function KalimatiApp() {
                       </div>
                       <div>
                         <div style={{ height: 14, border: `3px solid ${INK}`, borderRadius: 999, background: "#FFFFFF", overflow: "hidden" }}>
-                          <div className="k-progress-fill" style={{ height: "100%", background: INK, transform: `scaleX(${d.pct / 100})` }} />
+                          <div style={{ height: "100%", background: INK, width: `${d.pct}%` }} />
                         </div>
                         <div style={{ fontSize: 13, fontWeight: 800, marginTop: 7, color: "#6E6055" }}>{d.progressLabel}</div>
                       </div>
@@ -1160,7 +1133,6 @@ export default function KalimatiApp() {
             q={q}
             idx={idx}
             total={total}
-            answerRun={answerRun}
             picked={picked}
             deckName={deckId === "fav" ? "My starred words" : DECKS.find((d) => d.id === deckId)?.title || ""}
             fav={!!progress.fav[q.word.e]}
@@ -1178,8 +1150,7 @@ export default function KalimatiApp() {
         {/* ---------- done ---------- */}
         {screen === "done" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 20, animation: "popIn 0.35s ease-out" }}>
-            <section className="k-completed" style={{ ...card("#FFE3A8", 32), padding: "34px 26px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-              <Celebration completed />
+            <section style={{ ...card("#FFE3A8", 32), padding: "34px 26px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
               <div style={{ fontSize: 44, letterSpacing: 8, animation: "bounceIn 0.5s ease-out" }}>
                 {"★".repeat(Math.max(1, Math.round((correctCount / total) * 3)))}
               </div>
@@ -1197,7 +1168,7 @@ export default function KalimatiApp() {
                     animation: "bounceIn 0.5s ease-out 0.2s backwards",
                   }}
                 >
-                  <div style={{ fontSize: 40, lineHeight: 1, animation: "sparkle 1.4s ease-in-out 2" }}>{earned}</div>
+                  <div style={{ fontSize: 40, lineHeight: 1, animation: "sparkle 1.4s ease-in-out infinite" }}>{earned}</div>
                   <div style={{ fontSize: 16, fontWeight: 800, textAlign: "left" }}>A new sticker for your book!</div>
                 </div>
               )}
@@ -1468,7 +1439,6 @@ function PracticeScreen({
   q,
   idx,
   total,
-  answerRun,
   picked,
   deckName,
   fav,
@@ -1481,7 +1451,6 @@ function PracticeScreen({
   q: Question;
   idx: number;
   total: number;
-  answerRun: number;
   picked: Word | null;
   deckName: string;
   fav: boolean;
@@ -1494,17 +1463,11 @@ function PracticeScreen({
   const w = q.word;
   const right = !!picked && picked.e === w.e;
   const mode = q.mode;
-  const countMode = mode === "count";
   const arabicOptions = mode === "arabic";
   const englishOptions = mode === "reverse" || mode === "listen";
   const spellMode = mode === "spell";
   const sentenceMode = mode === "sentence";
   const pic = picFor(w);
-  const questionFocus = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (idx > 0) questionFocus.current?.focus({ preventScroll: true });
-  }, [idx]);
 
   useEffect(() => {
     if (mode === "listen") {
@@ -1516,7 +1479,7 @@ function PracticeScreen({
   }, [w.e, mode]);
 
   const taskLabel =
-    countMode ? "count and choose the number" : mode === "arabic"
+    mode === "arabic"
       ? "how do you say it in Arabic"
       : mode === "reverse"
         ? "read the Arabic — which word is it"
@@ -1554,9 +1517,6 @@ function PracticeScreen({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
-        {picked ? `${right ? "Correct!" : "Good try."} ${idx + 1} of ${total} answered.${right && answerRun >= 2 ? ` ${answerRun} correct in a row!` : ""}` : ""}
-      </div>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <button
           aria-label="Quit practice"
@@ -1572,8 +1532,6 @@ function PracticeScreen({
             return (
               <div
                 key={i}
-                aria-hidden="true"
-                className={i === idx && picked ? "k-step-pop" : undefined}
                 style={{
                   flex: "1 1 18px",
                   minWidth: 18,
@@ -1588,7 +1546,7 @@ function PracticeScreen({
                   border: `3px solid ${doneStep || current ? INK : "#E0CDB4"}`,
                   background: doneStep ? "#FFE3A8" : current ? "#FFFFFF" : "#FFFBF4",
                   boxShadow: doneStep || current ? `0 3px 0 ${INK}` : "none",
-                  animation: current ? "sparkle 1s ease-in-out 2" : undefined,
+                  animation: current ? "sparkle 1.6s ease-in-out infinite" : "none",
                 }}
               >
                 {doneStep ? "★" : ""}
@@ -1599,26 +1557,44 @@ function PracticeScreen({
         <div style={{ flex: "0 0 auto", fontSize: 15, fontWeight: 800, color: "#7C6E60" }}>{idx + 1} / {total}</div>
       </div>
 
-      <section key={`${idx}-${w.e}`} className="k-question-enter" style={{ ...card("#FFFFFF", 32), padding: "30px 26px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-        <div ref={questionFocus} tabIndex={-1} className="sr-only">Question {idx + 1} of {total}: {taskLabel}. {countMode ? "How many balloons?" : mode === "listen" ? "Listen and choose." : w.e}</div>
+      <section style={{ ...card("#FFFFFF", 32), padding: "30px 26px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
         <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "#9A8A7B" }}>
           {deckName} · {taskLabel}
         </div>
 
-        {countMode ? (
-          <div className="k-count-wrapper"><CountingScene value={numberValue(w) ?? 0} answered={!!picked} />{right && <Celebration />}</div>
-        ) : mode === "listen" ? (
-          <div className={right ? "k-answer-pop" : undefined} style={{ position: "relative", ...picStyle({ kind: "emoji", value: "🎧" }, "lg"), background: "#E6EEFB", overflow: "visible" }}>🎧{right && <Celebration />}</div>
+        {mode === "listen" ? (
+          <div style={{ ...picStyle({ kind: "emoji", value: "🎧" }, "lg"), background: "#E6EEFB" }}>🎧</div>
         ) : (
           <div style={{ position: "relative" }}>
-            <div className={right ? "k-answer-pop" : undefined} style={picStyle(pic, "lg")}>{picText(pic)}</div>
-            {right && <Celebration />}
+            <div style={picStyle(pic, "lg")}>{picText(pic)}</div>
+            {picked && right && (
+              <div style={{ position: "absolute", inset: 0, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {[
+                  { s: 26, x: "-74px", y: "-58px", d: "0s", c: "⭐" },
+                  { s: 22, x: "76px", y: "-50px", d: "0.04s", c: "✨" },
+                  { s: 24, x: "-84px", y: "40px", d: "0.08s", c: "🎉" },
+                  { s: 20, x: "82px", y: "46px", d: "0.02s", c: "⭐" },
+                  { s: 22, x: "0px", y: "-86px", d: "0.06s", c: "✨" },
+                ].map((b, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      position: "absolute",
+                      fontSize: b.s,
+                      ["--bx" as string]: b.x,
+                      ["--by" as string]: b.y,
+                      animation: `burst 0.75s ease-out ${b.d} forwards`,
+                    }}
+                  >
+                    {b.c}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {countMode ? (
-          picked && <div className="text-2xl font-extrabold">{numberValue(w)} · <span lang="ar" dir="rtl">{w.a}</span> · {w.e}</div>
-        ) : mode === "reverse" ? (
+        {mode === "reverse" ? (
           <>
             <div dir="rtl" style={{ fontFamily: "'Noto Naskh Arabic', serif", fontSize: 46, fontWeight: 700, lineHeight: 1.5 }}>{w.a}</div>
             <div style={{ fontSize: 17, fontWeight: 700, fontStyle: "italic", color: "#7C6E60" }}>{w.t}</div>
@@ -1634,7 +1610,7 @@ function PracticeScreen({
         )}
 
         <div style={{ fontSize: 17, color: "#6E6055", fontWeight: 600, maxWidth: 520 }}>
-          {countMode ? "كَمْ؟" : mode === "arabic"
+          {mode === "arabic"
             ? w.m
             : mode === "reverse"
               ? "Say the Arabic out loud, then pick the English word."
@@ -1647,19 +1623,19 @@ function PracticeScreen({
                     : "Read it together, then pick what it means."}
         </div>
 
-        {(!countMode || picked) && <button
+        <button
           className="k-press"
-          onClick={() => onSay(w, countMode || mode === "reverse")}
+          onClick={() => onSay(w, mode === "reverse")}
           style={{ ...pill("#E6EEFB", INK), padding: "11px 20px", fontSize: 15, minHeight: 44, marginTop: 2 }}
         >
-          {countMode ? "Hear the number" : mode === "listen"
+          {mode === "listen"
             ? "👂 Hear it again"
             : mode === "reverse"
               ? "Hear the Arabic"
               : sentenceMode
                 ? "Hear it in English"
                 : "Hear the English word"}
-        </button>}
+        </button>
       </section>
 
       {spellMode ? (
@@ -1669,8 +1645,7 @@ function PracticeScreen({
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 14 }}>
           {q.options.map((o) => (
-            <Button variant="ghost" className="h-auto whitespace-normal" key={o.e} disabled={!!picked} onClick={() => onPick(o)} style={optionStyle(o)}>
-              {countMode && <div className="text-3xl font-extrabold">{numberValue(o)} · {arabicDigits(numberValue(o) ?? 0)}</div>}
+            <button key={o.e} onClick={() => onPick(o)} style={optionStyle(o)}>
               {englishOptions && <div style={{ fontSize: 30, lineHeight: 1 }}>{picText(picFor(o))}</div>}
               <div
                 dir={arabicOptions ? "rtl" : "ltr"}
@@ -1682,10 +1657,10 @@ function PracticeScreen({
                       : { fontSize: 16, fontWeight: 700, lineHeight: 1.4 }
                 }
               >
-                {countMode ? o.a : arabicOptions ? o.a : englishOptions ? o.e : o.m}
+                {arabicOptions ? o.a : englishOptions ? o.e : o.m}
               </div>
-              {(arabicOptions || countMode) && <div style={{ fontSize: 15, fontWeight: 700, fontStyle: "italic", color: "#7C6E60" }}>{o.t}</div>}
-            </Button>
+              {arabicOptions && <div style={{ fontSize: 15, fontWeight: 700, fontStyle: "italic", color: "#7C6E60" }}>{o.t}</div>}
+            </button>
           ))}
         </div>
       )}
@@ -1705,7 +1680,6 @@ function PracticeScreen({
         >
           <Mascot mood={right ? "happy" : "oops"} />
           <div style={{ flex: "1 1 240px", minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
-            {right && answerRun >= 2 && <div key={answerRun} className="k-streak-pop" style={{ fontWeight: 800 }}>🔥 {answerRun} correct in a row!</div>}
             <div style={{ fontFamily: "Lora, serif", fontSize: 22, fontWeight: 600 }}>
               {right ? PRAISE[idx % PRAISE.length] : KIND[idx % KIND.length]}
             </div>

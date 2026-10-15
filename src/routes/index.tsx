@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import KalimatiApp from "@/features/kalimati/KalimatiApp";
 
-const title = "Kalimati wa Arghami — My Words and My Numbers";
+const title = "Kalimati — My Words | English–Arabic word practice";
 const description =
-  "Learn Arabic words and numbers with picture books, counting games, sentence practice, spoken words, stickers and streaks in Kalimati wa Arghami.";
+  "A playful English–Arabic vocabulary app: 20 picture word books, flashcard practice, spoken words, starred favourites, stickers and streaks.";
 
 export const Route = createFileRoute("/")({
   head: () => ({
