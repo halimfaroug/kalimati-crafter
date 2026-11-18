@@ -9,22 +9,26 @@ function pickVoice(lang: string): SpeechSynthesisVoice | null {
     const want = all.filter((v) => (v.lang || "").toLowerCase().indexOf(lang) === 0);
     if (!want.length) return null;
 
-    const CHILD = ["child", "kid", "junior"];
+    // Prefer the device's most natural-sounding voices (neural / online / premium),
+    // then clear, warm voices. Novelty voices are pushed to the bottom.
+    const HUMANLIKE = ["natural", "neural", "online", "premium", "enhanced", "siri", "wavenet", "studio"];
     const BRIGHT = [
-      "samantha", "karen", "tessa", "moira", "fiona", "serena", "allison", "ava",
-      "susan", "zoe", "nicky", "joana", "female", "hala", "laila", "zaina", "salma", "amira",
+      "samantha", "karen", "tessa", "moira", "fiona", "serena", "allison", "ava", "aria", "jenny",
+      "libby", "sonia", "susan", "zoe", "nicky", "joana", "female", "hala", "laila", "zaina", "salma", "amira", "zariyah",
     ];
-    const AVOID = ["male", "daniel", "oliver", "alex", "fred", "albert", "bad news", "bahh", "bells", "boing", "bubbles", "cellos", "deranged", "hysterical", "jester", "organ", "trinoids", "whisper", "wobble", "zarvox"];
+    const NOVELTY = ["bad news", "bahh", "bells", "boing", "bubbles", "cellos", "deranged", "hysterical", "jester", "organ", "trinoids", "whisper", "wobble", "zarvox", "superstar", "grandma", "grandpa", "rocko", "shelley", "flo", "eddy", "reed", "sandy"];
+    const has = (n: string, w: string) => new RegExp("(^|[^a-z])" + w + "([^a-z]|$)").test(n);
 
     const score = (v: SpeechSynthesisVoice) => {
       const n = (v.name || "").toLowerCase();
+      const l = (v.lang || "").toLowerCase();
       let sc = 0;
-      if (AVOID.some((a) => n.indexOf(a) >= 0)) sc -= 40;
-      if (CHILD.some((c) => n.indexOf(c) >= 0)) sc += 60;
-      if (BRIGHT.some((b) => n.indexOf(b) >= 0)) sc += 25;
-      if (v.localService) sc += 4;
-      if (n.indexOf("google") >= 0) sc += 12;
-      if (n.indexOf("natural") >= 0 || n.indexOf("premium") >= 0 || n.indexOf("enhanced") >= 0) sc += 10;
+      if (NOVELTY.some((a) => has(n, a))) sc -= 100;
+      if (HUMANLIKE.some((h) => n.indexOf(h) >= 0)) sc += 40;
+      if (n.indexOf("google") >= 0) sc += 25;
+      if (n.indexOf("microsoft") >= 0 && n.indexOf("online") >= 0) sc += 20;
+      if (BRIGHT.some((b) => has(n, b))) sc += 10;
+      if (l === "en-gb" || l === "en-us" || l === "ar-sa") sc += 5;
       return sc;
     };
 
@@ -34,7 +38,8 @@ function pickVoice(lang: string): SpeechSynthesisVoice | null {
   }
 }
 
-const VOICE_PITCH = 1.35;
+// Natural pitch: raising an adult voice makes it sound robotic.
+const VOICE_PITCH = 1.0;
 
 function utter(text: string, lang: string, rate: number) {
   const u = new SpeechSynthesisUtterance(text);
@@ -42,8 +47,7 @@ function utter(text: string, lang: string, rate: number) {
   u.rate = rate;
   const v = pickVoice(lang.slice(0, 2));
   if (v) u.voice = v;
-  const isChild = v && /child|kid|junior/i.test(v.name || "");
-  u.pitch = Math.max(0.5, Math.min(2, isChild ? Math.min(VOICE_PITCH, 1.1) : VOICE_PITCH));
+  u.pitch = VOICE_PITCH;
   return u;
 }
 
@@ -74,7 +78,7 @@ export function speakEn(text: string) {
   whenVoicesReady(() => {
     try {
       synth.cancel();
-      synth.speak(utter(text, "en-GB", 0.85));
+      synth.speak(utter(text, "en-GB", 0.92));
     } catch {
       /* ignore */
     }
@@ -87,7 +91,7 @@ export function speakAr(text: string) {
     const synth = window.speechSynthesis;
     if (!synth) return;
     synth.cancel();
-    synth.speak(utter(text, "ar-SA", 0.75));
+    synth.speak(utter(text, "ar-SA", 0.88));
   } catch {
     /* ignore */
   }
@@ -101,12 +105,12 @@ export function speakBoth(en: string, ar: string) {
     whenVoicesReady(() => {
       try {
         synth.cancel();
-        synth.speak(utter(en, "en-GB", 0.85));
+        synth.speak(utter(en, "en-GB", 0.92));
         if (ar) {
           const pause = new SpeechSynthesisUtterance(" ");
           pause.volume = 0;
           synth.speak(pause);
-          synth.speak(utter(ar, "ar-SA", 0.75));
+          synth.speak(utter(ar, "ar-SA", 0.88));
         }
       } catch {
         /* ignore */
